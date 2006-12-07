@@ -5,8 +5,8 @@
 
 #  vfte - for Linux console directly (with limitations, see con_linux.cpp)
 
-TARGETS = xfte vfte sfte
-#TARGETS = xfte
+#TARGETS = xfte vfte sfte
+TARGETS = xfte
 
 PRIMARY = xfte
 
