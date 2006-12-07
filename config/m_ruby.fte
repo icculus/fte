@@ -73,7 +73,7 @@ mode Ruby: PLAIN {               # Ruby mode
         FileNameRx          = '\\.{rb}|{ruby}$';
         Colorizer           = 'Ruby';
         HilitOn             = 1;
-        AutoIndent          = 1;
+        AutoIndent          = 0;
         IndentMode          = 'PLAIN';
         TabSize             = 8;
         SpaceTabs           = 1;

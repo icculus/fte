@@ -230,7 +230,7 @@ mode GL: PLAIN {      # 4GL Mode
     FileNameRx          = /\.\c{4GL}|{4BL}$/;
     HilitOn             = 1;
     Colorizer           = 'GL';
-    AutoIndent          = 1;
+    AutoIndent          = 0;
     IndentMode          = 'PLAIN';
     TabSize             = 8; # think twice before changing this, historically
                              # it's been known to cause a mess in sources ;-)

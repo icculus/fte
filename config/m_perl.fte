@@ -60,7 +60,7 @@ mode PERL: PLAIN { # PERL
     FirstLineRx         = /^{\#\! *}|{\cEXTPROC[ \t]+}[^ ]*perl/;
     HilitOn             = 1;
     Colorizer           = 'PERL';
-    AutoIndent          = 1;
+    AutoIndent          = 0;
     IndentMode          = 'C';
     MatchCase           = 1;
     MultiLineHilit      = 1;

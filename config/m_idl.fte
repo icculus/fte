@@ -34,7 +34,7 @@ mode IDL: C {      # IDL Mode
     FileNameRx          = /\.\c{IDL}$/;
     HilitOn             = 1;
     Colorizer           = 'IDL';
-    AutoIndent          = 1;
+    AutoIndent          = 0;
     IndentMode          = 'C';
     MatchCase           = 1;
     Trim                = 1;

@@ -155,7 +155,7 @@ mode PHP: PLAIN {      # PHP Mode
     FileNameRx          = /\.\c{PHP3}|{PHP4}|{PHP}|{PHTML}$/;
     HilitOn             = 1;
     Colorizer           = 'PHP';
-    AutoIndent          = 1;
+    AutoIndent          = 0;
     IndentMode          = 'PLAIN';
     MatchCase           = 1;
     Trim                = 1;

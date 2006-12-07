@@ -55,7 +55,7 @@ mode Ada: PLAIN {               # Ada mode
     FileNameRx          = '\\.\\c{ADS}|{ADB}$';
     Colorizer           = 'Ada';
     HilitOn             = 1;
-    AutoIndent          = 1;
+    AutoIndent          = 0;
     IndentMode          = 'PLAIN';
     MatchCase           = 1;
     Trim                = 1;

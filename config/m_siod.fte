@@ -161,7 +161,7 @@ mode SIOD: PLAIN {      # siod Mode
     FileNameRx          = /\.\cscm$/;
     HilitOn             = 1;
     Colorizer           = 'SIOD';
-    AutoIndent          = 1;
+    AutoIndent          = 0;
     IndentMode          = 'PLAIN';
     MatchCase           = 0;  #scheme is case insensitive.
     Trim                = 1;

@@ -27,7 +27,7 @@ mode EBNF: PLAIN {
     FileNameRx          = '\\.\\c{EBNF}$';
     Colorizer           = 'EBNF';
     HilitOn             = 1;
-    AutoIndent          = 1;
+    AutoIndent          = 0;
     IndentMode          = 'PLAIN';
     MultiLineHilit      = 1;
     AutoHilitParen      = 1;

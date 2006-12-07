@@ -2,7 +2,6 @@
 # included from ../ui.fte
 
 eventmap PERL {
-    key      [Tab]      { LineIndent LineTrim }
     key      [G-Enter]  { LineIndent LineNew }
 
     key      [#]        { SelfInsert LineIndent }

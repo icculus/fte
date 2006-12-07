@@ -130,7 +130,7 @@ mode MODULA3: PLAIN {      # Modula-3 Mode
     FileNameRx          = /\.\c{m3}|{i3}$/;
     HilitOn             = 1;
     Colorizer           = 'MODULA3';
-    AutoIndent          = 1;
+    AutoIndent          = 0;
     IndentMode          = 'PLAIN';
     MatchCase           = 1;
     Trim                = 1;

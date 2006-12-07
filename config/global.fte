@@ -21,8 +21,8 @@ object GLOBAL {
     DefaultModeName     = 'PLAIN'; 
     
     KeepHistory         = 1;   # load/save history on entry/exit
-    LoadDesktopOnEntry  = 0;   # load desktop on fte start (2 = when no files)
-    SaveDesktopOnExit   = 0;   # save desktop in ExitEditor
+    LoadDesktopOnEntry  = 1;   # load desktop on fte start (2 = when no files)
+    SaveDesktopOnExit   = 1;   # save desktop in ExitEditor
     
     CompletionFilter    = /^{\c.+\.o|a|{bak}|{exe}|{lib}|{class}|{jar}|{zip}|{gz}|{tar.gz}|{tgz}}|{.+~}|{CVS}$/;
     # {obj} file is also ASCII Object File Format for MAYA graphics editor

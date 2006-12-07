@@ -138,7 +138,7 @@ mode ASM51: PLAIN {      # C/C++ Mode
     FileNameRx          = /\.\c{a51}}$/;
     HilitOn             = 1;
     Colorizer           = 'ASM51';
-    AutoIndent          = 1;
+    AutoIndent          = 0;
     IndentMode          = 'C';
     TabSize             = 8; # think twice before changing this, historically
                              # it's been known to cause a mess in sources ;-)

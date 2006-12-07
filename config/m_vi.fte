@@ -73,7 +73,8 @@ mode VI_INS: MODEOPTS {
     key [G-Enter] { LineNew }
     key [Space] { InsertSpace }
     key [BackSp] { KillCharPrev }
-    key [Tab] { InsertTab }
+    key     [Tab]       { InsertSpacesToTab 10 }
+    key     [S+Tab]     { InsertTab }
 }
 
 mode VI_OVER: VI_INS {

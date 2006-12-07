@@ -48,9 +48,9 @@ mode C: PLAIN {      # C/C++ Mode
     FileNameRx		= /\.\c{C|H|{CPP}|{HPP}|{CC}|{XS}}$/;
     HilitOn		= 1;
     Colorizer		= 'C';
-    AutoIndent		= 1;
-    IndentMode		= 'C';
-    TabSize		= 8; # think twice before changing this, historically
+    AutoIndent		= 0;
+    IndentMode		= 'PLAIN';
+    TabSize		= 4; # think twice before changing this, historically
 			     # it's been known to cause a mess in sources ;-)
     SpaceTabs		= 0;
     MatchCase		= 1;
@@ -68,12 +68,12 @@ mode C: PLAIN {      # C/C++ Mode
     CommentEnd		= '*/';
 
     # kabi prefered settings
-    IndentWithTabs = 1;
+    IndentWithTabs = 0;
     CursorThroughTabs = 1;
-    DeleteKillTab = 0;
-    DeleteKillBlock = 0;
-    BackSpKillTab = 0;
-    BackSpUnindents = 0;
+    DeleteKillTab = 1;
+    DeleteKillBlock = 1;
+    BackSpKillTab = 1;
+    BackSpUnindents = 1;
     Abbreviations = 1;
     UndoMoves = 0;
 }

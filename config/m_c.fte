@@ -40,8 +40,8 @@ mode C: PLAIN {      # C/C++ Mode
     FileNameRx          = /\.\c{C|H|{CPP}|{HPP}|{CC}|{XS}}$/;
     HilitOn             = 1;
     Colorizer           = 'C';
-    AutoIndent          = 1;
-    IndentMode          = 'C';
+    AutoIndent          = 0;
+    IndentMode          = 'PLAIN';
     MatchCase           = 1;
     Trim                = 1;
     MultiLineHilit      = 1;

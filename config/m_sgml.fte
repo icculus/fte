@@ -269,7 +269,7 @@ mode SGML: PLAIN {
     CommentEnd          = "-->";
     WordWrap            = 2;
     RightMargin         = 85;
-    AutoIndent          = 1;
+    AutoIndent          = 0;
     
     Insert              = 1;
     IndentMode          = "Plain";

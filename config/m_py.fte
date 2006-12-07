@@ -160,7 +160,7 @@ mode PYTHON: PLAIN {
     HilitOn             = 1;
     Colorizer           = "PYTHON";
     IndentMode          = "PLAIN";
-    AutoIndent          = 1;
+    AutoIndent          = 0;
     MultiLineHilit      = 1;
     AutoHilitParen      = 1;
     Trim                = 1;

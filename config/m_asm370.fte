@@ -137,6 +137,6 @@ mode ASM370: PLAIN {
     CommentStart        = '*';
     CommentEnd          = '';
     KeepBackups         = 0;
-    AutoIndent          = 1;
+    AutoIndent          = 0;
     Trim                = 1;
 }

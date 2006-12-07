@@ -1,5 +1,4 @@
 eventmap C {
-    key [Tab]   { LineIndent; LineTrim }
     key [G-Enter]      { LineIndent; LineNew }
     key [{]     { SelfInsert; ?LineIndent }
     key [}]     { SelfInsert; ?LineIndent; MoveLeft; ?HilitMatchBracket; MoveRight }

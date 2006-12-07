@@ -105,7 +105,7 @@ mode PASCAL: PLAIN {      # Pascal Mode
     FileNameRx          = /\.\cPAS$/;
     HilitOn             = 1;
     Colorizer           = 'PASCAL';
-    AutoIndent          = 1;
+    AutoIndent          = 0;
     IndentMode          = 'PLAIN';
     MatchCase           = 0;
     Trim                = 1;

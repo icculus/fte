@@ -61,7 +61,7 @@ mode sl: PLAIN {      # SLang Mode
     FileNameRx          = /\.\cSL$/;
     HilitOn             = 1;
     Colorizer           = 'sl';
-    AutoIndent          = 1;
+    AutoIndent          = 0;
     IndentMode          = 'sl';
     TabSize             = 3; # think twice before changing this, historically
                              # it's been known to cause a mess in sources ;-)

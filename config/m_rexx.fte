@@ -327,7 +327,7 @@ mode REXX: PLAIN {                    # REXX mode
     HilitOn             = 1;
     Colorizer           = 'REXX';
     TabSize             = 8;
-    AutoIndent          = 1;
+    AutoIndent          = 0;
     IndentMode          = 'REXX';
     MultiLineHilit      = 1;
     AutoHilitParen      = 1;

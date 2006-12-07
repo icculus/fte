@@ -61,7 +61,7 @@ mode XML: PLAIN {
    Colorizer           = "XML";
    MultiLineHilit      = 1;
    AutoHilitParen      = 1;
-   AutoIndent          = 1;
+   AutoIndent          = 0;
    IndentMode          = 'PLAIN';
    TabSize             = 2;
 

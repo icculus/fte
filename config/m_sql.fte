@@ -128,7 +128,7 @@ mode SQL: PLAIN {      # SQL Mode
     FileNameRx          = /\.\cSQL$/;
     HilitOn             = 1;
     Colorizer           = 'SQL';
-    AutoIndent          = 1;
+    AutoIndent          = 0;
     IndentMode          = 'PLAIN';
     MatchCase           = 1;
     Trim                = 1;

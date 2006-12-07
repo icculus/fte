@@ -4,7 +4,6 @@
 # Revision March 19, 2001
 
 eventmap REXX {
-    key      [Tab]      { LineIndent; LineTrim }
     key      [G-Enter]  { LineIndent; LineNew }
     key      [:]        { SelfInsert; LineIndent }
     key      [A+\\]     { BlockReIndent }
