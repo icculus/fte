@@ -60,7 +60,7 @@ int SaveHistory(char *FileName) {
                     FPHistory[i]->FileName);
     }
     { // input history
-        for (int i = 0; i < inputHistory.Count; i++) {
+        for (int i = inputHistory.Count - 1; i >= 0; i--) {
             fprintf(fp, "I|%d|%s\n", inputHistory.Id[i], inputHistory.Line[i]);
         }
     }
