@@ -22,6 +22,7 @@ menu MOpenInMode {
     item "&BIN"        { FileOpenInMode 'BIN' }
     item "4&GL"        { FileOpenInMode 'GL' }
     item "SGML"        { FileOpenInMode 'SGML' }
+    item "&UScript"    { FileOpenInMode 'UNREALSCRIPT' }
 }
 
 menu MOpenInModeMore {
@@ -128,6 +129,7 @@ menu MChangeMode {
     item "4&GL"        { ChangeMode 'GL' }
     item "SGML"        { ChangeMode 'SGML' }
     item "ASM"         { ChangeMode 'ASM' }
+    item "&UScript"    { ChangeMode 'UNREALSCRIPT' }
 }
 
 menu MChangeModeMore {

@@ -214,6 +214,7 @@ menu MChangeMode {
     item "TE&X"        { ChangeMode 'TEX' }
     item "&BIN"        { ChangeMode 'BIN' }
     item "4&GL"        { ChangeMode 'GL' }
+    item "&UScript"    { ChangeMode 'UNREALSCRIPT' }
 }
 
 menu MOpenInMode {
@@ -237,6 +238,7 @@ menu MOpenInMode {
     item "TE&X"        { FileOpenInMode 'TEX' }
     item "&BIN"        { FileOpenInMode 'BIN' }
     item "4&GL"        { FileOpenInMode 'GL' }
+    item "&UScript"    { FileOpenInMode 'UNREALSCRIPT' }
 }
 
 menu File {

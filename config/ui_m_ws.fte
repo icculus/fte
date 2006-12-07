@@ -19,6 +19,7 @@ menu MOpenInMode {
     item "&JAVA"       { FileOpenInMode 'JAVA' }
     item "TE&X"        { FileOpenInMode 'TEX' }
     item "&BIN"        { FileOpenInMode 'BIN' }
+    item "&UScript"    { FileOpenInMode 'UNREALSCRIPT' }
 }
 
 menu Object {
@@ -138,6 +139,7 @@ menu MChangeMode {
     item "&JAVA"       { ChangeMode 'JAVA' }
     item "TE&X"        { ChangeMode 'TEX' }
     item "&BIN"        { ChangeMode 'BIN' }
+    item "&UScript"    { ChangeMode 'UNREALSCRIPT' }
 }
 
 menu File {

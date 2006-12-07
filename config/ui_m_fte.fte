@@ -23,6 +23,7 @@ menu MOpenInMode {
     item "4&GL"        { FileOpenInMode 'GL' }
     item "PHP"         { FileOpenInMode 'PHP' }
     item "P&ython"     { FileOpenInMode 'PYTHON' }
+    item "&UScript"    { FileOpenInMode 'UNREALSCRIPT' }
 }
 
 menu Object {
@@ -112,6 +113,7 @@ menu MChangeMode {
     item "4&GL"        { ChangeMode 'GL' }
     item "PHP"         { ChangeMode 'PHP' }
     item "P&ython"     { ChangeMode 'PYTHON' }
+    item "&UScript"    { ChangeMode 'UNREALSCRIPT' }
 }
 
 menu File {
