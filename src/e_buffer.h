@@ -211,6 +211,8 @@ public:
     ~EBuffer();
     virtual void DeleteRelated();
     
+    virtual bool IsReadOnly();
+
     virtual EViewPort *CreateViewPort(EView *V);
     EEditPort *GetViewVPort(EView *V);
     EEditPort *GetVPort();

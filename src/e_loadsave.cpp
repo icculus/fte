@@ -23,7 +23,7 @@ int EBuffer::Reload() {
 }
 
 int EBuffer::Save() {
-    if (BFI(this, BFI_ReadOnly)) {
+    if (IsReadOnly()) {
         Msg(S_ERROR, "File is read-only.");
         return 0;
     }
