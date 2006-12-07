@@ -474,6 +474,7 @@ eventmap VI_INS: MODEOPTS {
     key [Space] { InsertSpace }
     key [BackSp] { KillCharPrev }
     key [Tab] { InsertTab }
+    key     [S+Tab]     { InsertSpacesToTab 10 }
 }
 
 eventmap VI_OVER: VI_INS {
