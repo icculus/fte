@@ -44,6 +44,8 @@ void EDirectory::DrawLine(PCell B, int Line, int Col, ChColor color, int Width) 
         int Year, Mon, Day, Hour, Min, Sec;
         struct tm *t;
         time_t tim;
+        off_t Size = Files[Line]->Size();
+        char SizeStr[16];
 
         tim = Files[Line]->MTime();
         t = localtime(&tim);
@@ -59,11 +61,17 @@ void EDirectory::DrawLine(PCell B, int Line, int Col, ChColor color, int Width) 
             Year = Mon = Day = Hour = Min = Sec = 0;
         }
 
-        sprintf(s,
-                " %04d/%02d/%02d %02d:%02d:%02d %8ld ",
-                Year, Mon, Day, Hour, Min, Sec,
-                Files[Line]->Size());
+        if (Size < 0)
+            sprintf(SizeStr, "%8s", "VERY BIG");
+        else if (Size > (1024 * 1024 * 1024))
+            sprintf(SizeStr, "%7luG", (unsigned long) (((Size / 1024) / 1024) / 1024));
+        else if (Size > 99999999)
+            sprintf(SizeStr, "%7luM", (unsigned long) ((Size / 1024) / 1024));
+        else
+            sprintf(SizeStr, "%8lu", (unsigned long) Size);
 
+        sprintf(s, " %04d/%02d/%02d %02d:%02d:%02d %s ",
+                Year, Mon, Day, Hour, Min, Sec, SizeStr);
 
         strcat(s, Files[Line]->Name());
         s[strlen(s) + 1] = '\0';
