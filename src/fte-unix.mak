@@ -48,7 +48,7 @@ LD       = g++ -fno-rtti -fno-exceptions
 #######################################################################
 # Linux
 UOS      = -DLINUX
-XLIBDIR  = -L/usr/X11R6/lib -lstdc++
+XLIBDIR  = -L/usr/X11R6/lib
 XINCDIR  = -I/usr/X11R6/include
 
 #######################################################################
