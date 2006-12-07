@@ -85,7 +85,7 @@ colorize MAKE {
 mode MAKE: PLAIN {
     IndentWithTabs      = 1;
     SpaceTabs           = 0;
-    FileNameRx          = /\c{makefile}|{\.{MAK}|{MK}|{MIF}$}/;
+    FileNameRx          = /\c{makefile}|{\.{MAK}|{MK}|{MIF}|{MAKE}$}/;
     HilitOn             = 1;
     Colorizer           = 'MAKE';
 
