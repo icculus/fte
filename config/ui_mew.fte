@@ -2,8 +2,8 @@
 # FTE configuration file to mimic the Multi Edit for Windows UI
 #
 
-# Basic Commands (Global) #FOLD00
-menu Window { #FOLD01
+# Basic Commands (Global)
+menu Window {
     item "Split &Horizontal\tCtrl+F4" { WinHSplit }
     item "&Close view\tCtrl+Alt+F4" { WinClose }
     item "Close &other views\tF5" { WinZoom }
@@ -16,13 +16,13 @@ menu Window { #FOLD01
     item "&Directory\tC+M" { DirOpen }
 }
 
-menu Help { #FOLD01
+menu Help {
     item "&Keyboard" { ViewModeMap }
     item;
     item "&About..." { ShowVersion }
 }
 
-eventmap MODEL { #FOLD01
+eventmap MODEL {
     key       [F1]      { ViewModeMap }
     key     [C+F2]      { FileSaveAll }
     key       [F3]      { FileOpen }
@@ -70,7 +70,7 @@ eventmap MODEL { #FOLD01
     key     [A+8]       { SwitchTo 8 }
     key     [A+9]       { SwitchTo 9 }
 }
-# List Viewers #FOLD00
+# List Viewers
 eventmap MLIST: MODEL {
     key     [G-Left]    { MoveLeft }
     key     [G-Right]   { MoveRight }
@@ -93,8 +93,8 @@ eventmap MLIST: MODEL {
 
     key     [C+R]       { Rescan }
 }
-# Directory Browser  #FOLD00
-menu Directory { #FOLD01
+# Directory Browser
+menu Directory {
     item    "&Reload\tCtrl+R"         { Rescan }
     item    "&Close\tCtrl+F10"        { FileClose }
     item;
@@ -106,7 +106,7 @@ menu Directory { #FOLD01
     item    "E&xit\tAlt+X"            { ExitEditor }
 }                              
 
-menu Navigate { #FOLD01
+menu Navigate {
     item "Go &< level\tCtrl+PgUp"     { DirGoUp }
     item "Go &> level\tCtrl+PgDn"   { DirGoDown }
     item "Go to &\\\tCtrl+\\"          { DirGoRoot }
@@ -124,14 +124,14 @@ menu Navigate { #FOLD01
     item '&I:\\' { DirGoto 'I:\\' }
 }
 
-menu DirMain { #FOLD01
+menu DirMain {
     submenu "&Directory", Directory;
     submenu "&Navigate", Navigate;
     submenu "&Tools", Tools;
     submenu "&Window",  Window;
 }
 
-eventmap DIRECTORY: MLIST { #FOLD01
+eventmap DIRECTORY: MLIST {
     MainMenu = 'DirMain';
     
     key [C+G-PgUp]      { DirGoUp }
@@ -146,7 +146,7 @@ eventmap DIRECTORY: MLIST { #FOLD01
     key     [A+W]       { MainMenu 'W' }
     key     [A+T]       { MainMenu 'T' }
 }
-# Buffer List #FOLD00
+# Buffer List
 eventmap BUFFERS: MLIST {
     key  [Esc]   { FileClose 0 } # 0 = do not open directory when last closed, overrides OpenAfterClose default.
 
@@ -154,12 +154,12 @@ eventmap BUFFERS: MLIST {
     key  [F2]    { BufListFileSave }
 }
 
-# Routine List #FOLD00
+# Routine List
 eventmap ROUTINES: MLIST {
     key  [Esc]   { FileClose }
 }
 
-# Message List #FOLD00
+# Message List
 menu Messages {
     item "&Close\tCtrl+F10"        { FileClose }
     item;
@@ -185,15 +185,15 @@ eventmap MESSAGES: MLIST {
     key     [C+C]       { ChildClose } # does NOT kill, just closes pipe
 }
 
-# Event Map View #FOLD00
+# Event Map View
 eventmap EVENTMAPVIEW: MLIST {
     key [Esc] { FileClose 0 }
 }
 
-# Editor - Editing Modes #FOLD00
-# PLAIN #FOLD01
-# menus  #FOLD02
-menu MChangeMode { #FOLD03
+# Editor - Editing Modes
+# PLAIN
+# menus
+menu MChangeMode {
     item "&Plain"      { ChangeMode 'PLAIN' }
     item "&Text"       { ChangeMode 'TEXT' }
     item "&C"          { ChangeMode 'C' }
@@ -216,7 +216,7 @@ menu MChangeMode { #FOLD03
     item "4&GL"        { ChangeMode 'GL' }
 }
 
-menu MOpenInMode { #FOLD03
+menu MOpenInMode {
     item "&Plain"      { FileOpenInMode 'PLAIN' }
     item "&Text"       { FileOpenInMode 'TEXT' }
     item "&C"          { FileOpenInMode 'C' }
@@ -239,7 +239,7 @@ menu MOpenInMode { #FOLD03
     item "4&GL"        { FileOpenInMode 'GL' }
 }
 
-menu File { #FOLD03
+menu File {
     item    "&Open...\tF3"            { FileOpen }
     submenu "Open in &Mode...\tCtrl+F3", MOpenInMode;
 #    item    "Open &Binary"            { FileOpenInMode 'BIN' }
@@ -260,7 +260,7 @@ menu File { #FOLD03
     item    "E&xit\tAlt+X"              { ExitEditor }
 }                              
                                
-menu Edit { #FOLD03
+menu Edit {
     item "&Undo\tAlt+BackSp" { Undo }
     item "&Redo\tAlt+Enter" { Redo }
     item;                                
@@ -281,7 +281,7 @@ menu Edit { #FOLD03
 #    item "&Quote Literal...\tCtrl+Q" { InsertChar }
 }
 
-menu Translate { #FOLD03
+menu Translate {
     item "&Uppercase"         { BlockCaseUp }
     item "&Lowercase"         { BlockCaseDown }
     item "&Togglecase"        { BlockCaseToggle }
@@ -290,7 +290,7 @@ menu Translate { #FOLD03
     item "User &specified..." { BlockTrans }
 }
 
-menu Block { #FOLD03
+menu Block {
     item "&Delete Block\tCtrl+F8" { BlockKill }
     item;
     item "Save &Block to Disk...\tShift+F2"   { BlockWrite }
@@ -313,7 +313,7 @@ menu Block { #FOLD03
     submenu "Translat&e",        Translate;
 }
 
-menu Search { #FOLD03
+menu Search {
     item "&Search...\tF5" { Find }
     item "Search and &Replace...\tShift+F5" { FindReplace }
     item "&Again\tCtrl+F5" { FindRepeat }
@@ -331,7 +331,7 @@ menu Search { #FOLD03
     item "Goto Line &Number...\tAlt+F5" { MoveToLine }
 }               
 
-menu Fold { #FOLD03
+menu Fold {
     item "&Create fold\tAlt+Gray++" { FoldCreate }
     item "Create folds by &regexp..." { FoldCreateByRegexp }
     item "&Destroy fold\tAlt+Gray+-" { FoldDestroy }
@@ -349,7 +349,7 @@ menu Fold { #FOLD03
     item "Destro&y all folds" { FoldDestroyAll }
 }
 
-menu Options { #FOLD03
+menu Options {
     submenu "Change &mode\tC+O C+M", MChangeMode;
     item;
     item "&Insert mode\tC+O C+I" { ToggleInsert }
@@ -390,7 +390,7 @@ menu Text {
     submenu "C&ollapse...",    Fold;
 }
 
-menu Main {  #FOLD03
+menu Main {
     submenu "&File",    File;
     submenu "&Edit",    Edit;
     submenu "&Block",   Block;
@@ -402,7 +402,7 @@ menu Main {  #FOLD03
     submenu "&Help",    Help;
 }
 
-menu Local { #FOLD03
+menu Local {
     item "&Unmark\tEsc"   { BlockUnmark }
     item "Cu&t\tShift+Del" { BlockCut }
     item "&Copy\tCtrl+Ins" { BlockCopy }
@@ -416,7 +416,7 @@ menu Local { #FOLD03
     item "Cl&ose\tC+F10" { FileClose }
 }
 
-eventmap PLAIN: MODEL { #FOLD02
+eventmap PLAIN: MODEL {
 # keymap for plaintext mode
     MainMenu   = 'Main';    # menu for menubar
     LocalMenu  = 'Local';   # local menu
@@ -634,8 +634,8 @@ eventmap PLAIN: MODEL { #FOLD02
 
 mode PLAIN { EventMap = 'PLAIN'; }
 
-# C #FOLD01
-menu Local_C { #FOLD02
+# C
+menu Local_C {
     item "&Unmark\tEsc" { BlockMarkStream; BlockUnmark }
     item "Cu&t\tShift+Del" { BlockCut }
     item "&Copy\tCtrl+Ins" { BlockCopy }
@@ -652,7 +652,7 @@ menu Local_C { #FOLD02
     item "I&ndent block\tAlt+\\"  { BlockReIndent }
 }
 
-eventmap C: PLAIN { #FOLD02
+eventmap C: PLAIN {
     LocalMenu           = 'Local_C';  # local menu
 
     key       [Tab]     { LineIndent; LineTrim }
@@ -670,22 +670,22 @@ eventmap C: PLAIN { #FOLD02
     key   [S+G-Enter]   { LineInsert; LineIndent }
 }
 
-mode C { #FOLD02
+mode C {
     EventMap = 'C';
 }
 
-# REXX  #FOLD01
-eventmap REXX: PLAIN { #FOLD02
+# REXX
+eventmap REXX: PLAIN {
     key      [Tab]      { LineIndent LineTrim }
     key      [G-Enter]  { LineIndent LineNew }
     key      [:]        { SelfInsert LineIndent }
     key      [A+\\]     { BlockReIndent }
 }
 
-mode REXX { EventMap = 'REXX'; } #FOLD02
+mode REXX { EventMap = 'REXX'; }
 
-# PERL #FOLD01
-eventmap PERL: PLAIN { #FOLD02
+# PERL
+eventmap PERL: PLAIN {
     key      [Tab]      { LineIndent LineTrim }
     key      [G-Enter]  { LineIndent LineNew }
 
@@ -695,11 +695,11 @@ eventmap PERL: PLAIN { #FOLD02
     key      [A+\\]     { BlockReIndent }
 }
 
-mode PERL { EventMap = 'PERL'; } #FOLD02
+mode PERL { EventMap = 'PERL'; }
 
-# JAVA #FOLD01
+# JAVA
 
-eventmap JAVA: PLAIN { #FOLD02
+eventmap JAVA: PLAIN {
     key       [Tab]     { LineIndent; LineTrim }
     key       [G-Enter] { LineIndent; LineNew }
     key       [{]       { SelfInsert; LineIndent }
@@ -709,16 +709,16 @@ eventmap JAVA: PLAIN { #FOLD02
     key     [A+\\]      { BlockReIndent }
 }
 
-mode JAVA { EventMap = 'JAVA'; } #FOLD02
+mode JAVA { EventMap = 'JAVA'; }
 
-# HTML #FOLD01
-menu HTML_Physical { #FOLD02
+# HTML
+menu HTML_Physical {
     item    "&Bold        <B>\tC-E C-B" { HTML_B }
     item    "&Italic      <I>\tC-E C-I" { HTML_I }
     item    "&Typewriter  <TT>\tC-E C-T" { HTML_TT }
 }
 
-menu HTML_Logical { #FOLD02
+menu HTML_Logical {
     item    "&Definition  <DFN>\tC-E C-D" { HTML_DFN }
     item    "&Emphasize   <EM>\tC-E C-E" { HTML_EM }
     item    "Citati&on    <CITE>\tC-E C-O" { HTML_CITE }
@@ -729,7 +729,7 @@ menu HTML_Logical { #FOLD02
     item    "&Variable    <VAR>\tC-E C-V" { HTML_VAR }
 }
 
-menu HTML_Header { #FOLD02
+menu HTML_Header {
     item    "&1  <H1>\tC-E 1" { HTML_H1 }
     item    "&2  <H2>\tC-E 2" { HTML_H2 }
     item    "&3  <H3>\tC-E 3" { HTML_H3 }
@@ -738,7 +738,7 @@ menu HTML_Header { #FOLD02
     item    "&6  <H6>\tC-E 6" { HTML_H6 }
 }
 
-menu HTML_List { #FOLD02
+menu HTML_List {
     item    "List &item        <LI>\tC-E i"  { HTML_LI }
     item    "&Unordered list   <UI>\tC-E u"  { HTML_UL }
     item    "&Ordered list     <OL>\tC-E o"  { HTML_OL }
@@ -747,7 +747,7 @@ menu HTML_List { #FOLD02
     item    "&Definition       <DD>\tC-E d"  { HTML_DD }
 }
 
-menu HTML_Table { #FOLD02
+menu HTML_Table {
     item    "&Table    <TABLE>\tC-E A-T" { HTML_TABLE }
     item    "&Caption  <CAPTION>\tC-E A-C" { HTML_CAPTION }
     item    "&Header   <TH>\tC-E A-H" { HTML_TH }
@@ -755,7 +755,7 @@ menu HTML_Table { #FOLD02
     item    "&Data     <TD>\tC-E A-D" { HTML_TD }
 }
 
-menu HTMLTags { #FOLD02
+menu HTMLTags {
     item    "&Paragraph     <P>\tC-E C-P  " { HTML_P }
     item    "Line brea&k    <BR>\tC-E Enter" { HTML_BR }
     item    "Horiz.line    <HR>\tC-E &-    " { HTML_HR }
@@ -775,7 +775,7 @@ menu HTMLTags { #FOLD02
     item    "Basic document\tC-E &0   " { HTML_Base }
 }
 
-menu Main_HTML { #FOLD02
+menu Main_HTML {
     submenu "&File",    File;
     submenu "&Edit",    Edit;
     submenu "&Block",   Block;
@@ -788,7 +788,7 @@ menu Main_HTML { #FOLD02
     submenu "&Help",    Help;
 }
 
-eventmap HTML: PLAIN { #FOLD02
+eventmap HTML: PLAIN {
     
     MainMenu            = "Main_HTML";   # menu for menubar
 
@@ -858,10 +858,10 @@ eventmap HTML: PLAIN { #FOLD02
 }
 
 # make sure proper eventmap is used
-mode HTML { EventMap = 'HTML'; } #FOLD02
+mode HTML { EventMap = 'HTML'; }
 
-# FTE  #FOLD01
-eventmap FTE: PLAIN { #FOLD02
+# FTE
+eventmap FTE: PLAIN {
     key       [Tab]     { LineIndent; LineTrim }
     key       [G-Enter] { LineIndent; LineNew }
     key       [{]       { SelfInsert; LineIndent }
@@ -869,4 +869,4 @@ eventmap FTE: PLAIN { #FOLD02
 }
 
 # make sure proper eventmap is used
-mode FTE { EventMap = 'FTE'; } #FOLD02
+mode FTE { EventMap = 'FTE'; }
