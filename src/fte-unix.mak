@@ -17,7 +17,7 @@ PRIMARY = xfte
 #REMAPFLAG = -DUSE_HARD_REMAP
 
 # Drawing fonts with locale support
-XMBFLAG = -DUSE_XMB
+#XMBFLAG = -DUSE_XMB
 
 # System X11R6 is compiled with X_LOCALE
 #SYSTEM_X_LOCALE = -DX_LOCALE
