@@ -20,7 +20,7 @@ static int FPHistoryCount = 0;
 
 static InputHistory inputHistory = { 0, 0, 0 };
 
-void ClearHistory() { /*FOLD00*/
+void ClearHistory() {
 
     // free filenames from all entries
     while(FPHistoryCount--)
@@ -43,7 +43,7 @@ void ClearHistory() { /*FOLD00*/
     }
 }
 
-int SaveHistory(char *FileName) { /*FOLD00*/
+int SaveHistory(char *FileName) {
     FILE *fp;
     
     fp = fopen(FileName, "w");
@@ -68,7 +68,7 @@ int SaveHistory(char *FileName) { /*FOLD00*/
     return 1;
 }
 
-int LoadHistory(char *FileName) { /*fold00*/
+int LoadHistory(char *FileName) {
     FILE *fp;
     char line[2048];
     char *p, *e;
@@ -131,7 +131,7 @@ int LoadHistory(char *FileName) { /*fold00*/
     return 1;
 }
 
-int UpdateFPos(char *FileName, int Row, int Col) { /*fold00*/
+int UpdateFPos(char *FileName, int Row, int Col) {
     int L = 0, R = FPHistoryCount, M, N;
     FPosHistory *fp, **NH;
     int cmp;
@@ -187,7 +187,7 @@ int UpdateFPos(char *FileName, int Row, int Col) { /*fold00*/
     return 1;
 }
 
-int RetrieveFPos(char *FileName, int &Row, int &Col) { /*FOLD00*/
+int RetrieveFPos(char *FileName, int &Row, int &Col) {
     int L = 0, R = FPHistoryCount, M;
     int cmp;
 
@@ -210,7 +210,7 @@ int RetrieveFPos(char *FileName, int &Row, int &Col) { /*FOLD00*/
     return 0;
 }
 
-int AddInputHistory(int Id, char *String) { /*fold00*/
+int AddInputHistory(int Id, char *String) {
     if (inputHistory.Count < MAX_INPUT_HIST) {
         inputHistory.Count++;
         inputHistory.Line = (char **) realloc((void *) inputHistory.Line,
@@ -231,7 +231,7 @@ int AddInputHistory(int Id, char *String) { /*fold00*/
     return 1;
 }
 
-int CountInputHistory(int Id) { /*fold00*/
+int CountInputHistory(int Id) {
     int i, c = 0;
     
     for (i = 0; i < inputHistory.Count; i++)
@@ -239,7 +239,7 @@ int CountInputHistory(int Id) { /*fold00*/
     return c;
 }
 
-int GetInputHistory(int Id, char *String, int len, int Nth) { /*fold00*/
+int GetInputHistory(int Id, char *String, int len, int Nth) {
     int i = 0;
 
     assert(len > 0);
