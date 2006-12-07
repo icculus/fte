@@ -1198,7 +1198,7 @@ char ConGetDrawChar(int index) {
 	return tab_iso[index];
 
 #ifdef USE_SCRNMAP
-    return fromScreen[tab[index]];
+    return fromScreen[(size_t) tab[index]];
 #else
     return tab[index];
 #endif

@@ -725,7 +725,7 @@ int EBuffer::DelChars(int Row, int Ofs, int ACount) {
     return 1;
 }
 
-int EBuffer::InsChars(int Row, int Ofs, int ACount, char *Buffer) {
+int EBuffer::InsChars(int Row, int Ofs, int ACount, const char *Buffer) {
     PELine L;
     
 //    printf("InsChars: %d:%d %d\n", Row, Ofs, ACount);
@@ -841,7 +841,7 @@ int EBuffer::DelText(int Row, int Col, int ACount, int DoMark) {
     return 1;
 }
 
-int EBuffer::InsText(int Row, int Col, int ACount, char *ABuffer, int DoMark) {
+int EBuffer::InsText(int Row, int Col, int ACount, const char *ABuffer, int DoMark) {
     int B, L;
     
 //    printf("InsText: %d:%d %d\n", Row, Col, ACount);

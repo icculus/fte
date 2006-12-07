@@ -35,7 +35,7 @@ APPOPTIONS = -DDEFAULT_INTERNAL_CONFIG
 
 #gcc/g++
 COPTIONS = -Wall -Wpointer-arith -Wconversion -Wwrite-strings \
-           -Wmissing-prototypes -Wmissing-declarations -Winline
+           -Wmissing-prototypes -Winline
 
 #CC       = g++
 #LD       = g++
@@ -50,6 +50,7 @@ LD       = g++ -fno-rtti -fno-exceptions
 # Linux
 UOS      = -DLINUX
 XLIBDIR  = -L/usr/X11R6/lib -lstdc++
+XINCDIR  = -I/usr/X11R6/include
 
 #######################################################################
 # HP/UX
@@ -139,7 +140,7 @@ INCDIR   =
 OPTIMIZE = -O2
 #OPTIMIZE = -O2 -s
 
-CCFLAGS  = $(OPTIMIZE) $(I18NOPTIONS) $(APPOPTIONS) $(COPTIONS) -DUNIX $(UOS) $(INCDIR) $(XINCDIR) $(QINCDIR) $(MINCDIR) $(SINCDIR)
+CCFLAGS  = $(OPTIMIZE) $(I18NOPTIONS) $(APPOPTIONS) $(COPTIONS) -DUNIX $(UOS) $(INCDIR) $(XINCDIR) $(QINCDIR) $(MINCDIR) $(SINCDIR) $(USE_FILE_OFFSET64)
 LDFLAGS  = $(OPTIMIZE) $(LIBDIR) $(XLIBDIR) $(QLIBDIR) $(MLIBDIR)
 
 OEXT     = o
