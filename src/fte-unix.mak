@@ -39,7 +39,7 @@ COPTIONS = -Wall -Wpointer-arith -Wconversion -Wwrite-strings -Winline
 #CC       = g++
 #LD       = g++
 # try this for smaller/faster code and less dependencies
-CC       = g++ -fno-rtti -fno-exceptions
+CC       = g++ -fno-rtti -fno-exceptions -fno-strict-aliasing
 LD       = g++ -fno-rtti -fno-exceptions
 
 
