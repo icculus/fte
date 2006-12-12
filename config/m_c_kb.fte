@@ -45,7 +45,7 @@ colorize C {
 }
 
 mode C: PLAIN {      # C/C++ Mode
-    FileNameRx		= /\.\c{C|H|{CPP}|{HPP}|{CC}|{CXX}|{XS}}$/;
+    FileNameRx		= /\.\c{C|H|{CPP}|{HPP}|{CC}|{CXX}|{M}|{MM}|{XS}}$/;
     HilitOn		= 1;
     Colorizer		= 'C';
     AutoIndent		= 0;
