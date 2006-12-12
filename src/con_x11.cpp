@@ -1071,8 +1071,12 @@ void ProcessXEvents(TEvent *Event) {
 #endif
         XNextEvent(display, &event);
 
-    if (XFilterEvent(&event, None))
-        return;
+// The X server on Mac OS X filters Alt-E, which blocks the edit menu...not
+//  sure why they do this. In 5+ years of using FTE daily, I don't think I've
+//  ever seen anything else that needed filtering, though, so we'll just
+//  turn off the filter for now...
+//    if (XFilterEvent(&event, None))
+//        return;
 
     if (event.type == MappingNotify) {
         XRefreshKeyboardMapping(&event.xmapping);
