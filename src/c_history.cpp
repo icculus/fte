@@ -43,6 +43,8 @@ void ClearHistory() {
     }
 }
 
+bool IgnoreFilenameForDesktop(const char *path);
+
 int SaveHistory(char *FileName) {
     FILE *fp;
     
@@ -53,11 +55,13 @@ int SaveHistory(char *FileName) {
     fprintf(fp, HISTORY_VER);
     if (FPHistory) { // file position history
         int i;
-        for (i = 0; i < FPHistoryCount; i++)
-            fprintf(fp, "F|%d|%d|%s\n",
-                    FPHistory[i]->Row,
-                    FPHistory[i]->Col,
-                    FPHistory[i]->FileName);
+        for (i = 0; i < FPHistoryCount; i++) {
+            if (!IgnoreFilenameForDesktop(FPHistory[i]->FileName))
+                fprintf(fp, "F|%d|%d|%s\n",
+                        FPHistory[i]->Row,
+                        FPHistory[i]->Col,
+                        FPHistory[i]->FileName);
+        }
     }
     { // input history
         for (int i = inputHistory.Count - 1; i >= 0; i--) {

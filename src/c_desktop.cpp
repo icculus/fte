@@ -16,6 +16,34 @@
 
 char DesktopFileName[256] = "";
 
+bool IgnoreFilenameForDesktop(const char *path)
+{
+    const char *fname = strrchr(path, '/');
+    if (fname == NULL)
+        fname = strrchr(path, '\\');
+    fname = ((fname == NULL) ? path : (fname + 1));
+
+    const char *ext = strrchr(fname, '.');
+    if (ext == NULL)
+        ext = "";
+
+    const char *hgeditor = "hg-editor-";
+    if (strncmp(fname, hgeditor, strlen(hgeditor)) == 0)
+    {
+        if (strcmp(ext, ".txt") == 0)
+            return true;
+    }
+
+    const char *svncommit = "svn-commit";
+    if (strncmp(fname, svncommit, strlen(svncommit)) == 0)
+    {
+        if (strcmp(ext, ".tmp") == 0)
+            return true;
+    }
+
+    return false;
+}
+
 int SaveDesktop(char *FileName) {
     FILE *fp;
     EModel *M;
@@ -34,7 +62,8 @@ int SaveDesktop(char *FileName) {
         case CONTEXT_FILE:
             {
                 EBuffer *B = (EBuffer *)M;
-                fprintf(fp, "F|%d|%s\n", B->ModelNo, B->FileName);
+                if (!IgnoreFilenameForDesktop(B->FileName))
+                   fprintf(fp, "F|%d|%s\n", B->ModelNo, B->FileName);
             }
             break;
 #ifdef CONFIG_OBJ_DIRECTORY
