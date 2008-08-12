@@ -149,17 +149,23 @@ int EBuffer::GetUData(int No, int pos, void **data, int len) {
 }
 
 #define UGETC(rc,no,pos,what) \
-    do { void *d = NULL; \
-    rc = GetUData(no, pos, &d, sizeof(unsigned char)); \
-    *(unsigned char *)&what = *(unsigned char *)d; \
-    pos -= sizeof(unsigned char); \
+    do { \
+      void *d = NULL; \
+      rc = GetUData(no, pos, &d, sizeof(unsigned char)); \
+      if (rc) { \
+        *(unsigned char *)&what = *(unsigned char *)d; \
+        pos -= sizeof(unsigned char); \
+      } \
     } while (0)
 
 #define UGET(rc,no,pos,what) \
-    do { void *d = NULL; \
-    rc = GetUData(no, pos, &d, sizeof(what)); \
-    memcpy((void *)&what, d, sizeof(what)); \
-    pos -= sizeof(what); \
+    do { \
+      void *d = NULL; \
+      rc = GetUData(no, pos, &d, sizeof(what)); \
+      if (rc) { \
+        memcpy((void *)&what, d, sizeof(what)); \
+        pos -= sizeof(what); \
+      } \
     } while (0)
 
 int EBuffer::Undo(int undo) {
