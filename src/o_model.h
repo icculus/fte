@@ -98,6 +98,8 @@ public:
     virtual void FocusChange(int GotFocus);
     virtual void Resize(int Width, int Height);
     
+    void SyncBufferPos();
+
     void SetModel(EModel *AModel);
     void SelectModel(EModel *AModel);
     void SwitchToModel(EModel *AModel);

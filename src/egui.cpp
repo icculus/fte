@@ -839,15 +839,55 @@ int EGUI::CmdLoadFiles(int &argc, char **argv) {
             }
         } else {
             char Path[MAXPATH];
+            const bool Expanded = (ExpandPath(argv[Arg], Path) == 0);
+
+            if (!Expanded)
+                snprintf(Path, sizeof (Path), "%s", argv[Arg]);
+
+            char *Colon = strrchr(Path, ':');
+            const bool SawColon = (Colon != NULL);
+
+            if (SawColon)
+            {
+                bool Invalid = false;
+                bool SawComma = false;
+                for (const char *ptr = Colon+1; (*ptr) && (!Invalid); ptr++)
+                {
+                    const char ch = *ptr;
+                    if (ch == ',')
+                    {
+                        if (SawComma)
+                            Invalid = true;
+                        else
+                            SawComma = true;
+                    }
+                    else if ((ch < '0') || (ch > '9'))
+                    {
+                        Invalid = true;
+                    }
+                }
+
+                if (!Invalid)
+                {
+                    *Colon = '\0';
+                    LineNum = 1;
+                    ColNum = 1;
+                    GotoLine = 1;
+                    if (SawComma)
+                        sscanf(Colon+1, "%d,%d", &LineNum, &ColNum);
+                    else
+                        sscanf(Colon+1, "%d", &LineNum);
+                }
+            }
 
             QuoteNext = 0;
-            if (ExpandPath(argv[Arg], Path) == 0 && IsDirectory(Path)) {
+            if (Expanded && IsDirectory(Path)) {
                 EModel *m = new EDirectory(cfAppend, &ActiveModel, Path);
                 assert(ActiveModel != 0 && m != 0);
             } else {
                 if (LCount != 0)
                     suspendLoads = 1;
-                if (MultiFileLoad(cfAppend, argv[Arg],
+                if (MultiFileLoad(cfAppend, Path,
                                   ModeOverride ? Mode : 0,
                                   ActiveView) == 0) {
                     suspendLoads = 0;
@@ -867,6 +907,7 @@ int EGUI::CmdLoadFiles(int &argc, char **argv) {
                         if (RetrieveFPos(((EBuffer *)ActiveModel)->FileName, r, c) == 1)
                             ((EBuffer *)ActiveModel)->SetNearPosR(c, r);
                     }
+                    ActiveView->SyncBufferPos();
                     //ActiveView->SelectModel(ActiveModel);
                 }
                 if (ReadOnly) {
@@ -874,6 +915,7 @@ int EGUI::CmdLoadFiles(int &argc, char **argv) {
                     BFI(((EBuffer *)ActiveModel), BFI_ReadOnly) = 1;
                 }
             }
+
             suspendLoads = 1;
             ActiveView->SelectModel(ActiveModel->Next);
             suspendLoads = 0;

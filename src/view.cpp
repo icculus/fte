@@ -114,6 +114,12 @@ void EView::SwitchToModel(EModel *AModel) {
     }
 }
 
+void EView::SyncBufferPos()
+{
+    if (Port)
+        Port->GetPos();
+}
+
 void EView::Activate(int GotFocus) {
     if (Model && Model->View != this && Port) {
         Model->SelectView(this);
