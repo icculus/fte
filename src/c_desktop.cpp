@@ -18,6 +18,10 @@ char DesktopFileName[256] = "";
 
 bool IgnoreFilenameForDesktop(const char *path)
 {
+    const char *tmpdir = "/tmp/";
+    if (strncmp(path, tmpdir, strlen(tmpdir)) == 0)
+        return true;  // ignore all things in /tmp.
+
     const char *fname = strrchr(path, '/');
     if (fname == NULL)
         fname = strrchr(path, '\\');
@@ -36,6 +40,13 @@ bool IgnoreFilenameForDesktop(const char *path)
 
     const char *svncommit = "svn-commit";
     if (strncmp(fname, svncommit, strlen(svncommit)) == 0)
+    {
+        if (strcmp(ext, ".tmp") == 0)
+            return true;
+    }
+
+    const char *svnprop = "svn-prop";
+    if (strncmp(fname, svnprop, strlen(svnprop)) == 0)
     {
         if (strcmp(ext, ".tmp") == 0)
             return true;
