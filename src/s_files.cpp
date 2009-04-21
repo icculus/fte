@@ -447,6 +447,9 @@ int ChangeDir(char *Dir) {
 #endif
     if (chdir(Dir) == -1)
         return -1;
+#if unix
+    setenv("PWD", Dir, 1);
+#endif
     return 0;
 }
 
