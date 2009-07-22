@@ -167,7 +167,7 @@ void EBuffer::DrawLine(TDrawBuffer B, int VRow, int C, int W, int &HilitX) {
             f = FindFold(Row);
             if (f != -1) {
                 if (FF[f].open == 1) {
-                    l = sprintf(fold, "[%d]", FF[f].level);
+                    l = snprintf(fold, sizeof (fold), "[%d]", FF[f].level);
                     MoveStr(B, ECol - C + 1, W, fold, hcPlain_Folds, 10);
                     ECol += l;
                 } else {
@@ -176,7 +176,7 @@ void EBuffer::DrawLine(TDrawBuffer B, int VRow, int C, int W, int &HilitX) {
                     } else if (VRow < VCount) {
                         Folded = RCount - (VRow + Vis(VRow));
                     }
-                    l = sprintf(fold, "(%d:%d)", FF[f].level, Folded);
+                    l = snprintf(fold, sizeof (fold), "(%d:%d)", FF[f].level, Folded);
                     MoveStr(B, ECol - C + 1, W, fold, hcPlain_Folds, 10);
                     ECol += l;
                     MoveAttr(B, 0, W, hcPlain_Folds, W);
@@ -394,14 +394,14 @@ void EBuffer::Redraw() {
 
                 if (CurPos < NumChars) {
                     CurCh = VLine(CurLine)->Chars[CurPos];
-                    sprintf(CCharStr, "%3u,%02X", CurCh, CurCh);
+                    snprintf(CCharStr, sizeof (CCharStr), "%3u,%02X", CurCh, CurCh);
                 } else {
                     if (CurPos > NumChars) strcpy(CCharStr, "      ");
                     else if (CurLine < NumLines - 1) strcpy(CCharStr, "   EOL");
                     else strcpy(CCharStr, "   EOF");
                 }
 
-                sprintf(s, "%04d:%02d %c%c%c%c%c %.6s %c"
+                snprintf(s, sizeof (s), "%04d:%02d %c%c%c%c%c %.6s %c"
 #ifdef DOS
                         " %lu "
 #endif
@@ -441,10 +441,10 @@ void EBuffer::Redraw() {
                 int l = strlen(s);
                 int fw = W->Cols - l;
                 int fl = strlen(FileName);
-                char num[10];
+                char num[64];
 
                 MoveStr(B, 0, W->Cols, s, SColor, W->Cols);
-                sprintf(num, " %s %d", CCharStr, ModelNo);
+                snprintf(num, sizeof (num), " %s %d", CCharStr, ModelNo);
                 MoveStr(B, W->Cols - strlen(num), W->Cols, num, SColor, W->Cols);
 
                 fw -= strlen(num);
