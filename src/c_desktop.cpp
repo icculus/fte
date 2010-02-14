@@ -52,6 +52,13 @@ bool IgnoreFilenameForDesktop(const char *path)
             return true;
     }
 
+    const char *fossileditor = "ci-comment-";
+    if (strncmp(fname, fossileditor, strlen(fossileditor)) == 0)
+    {
+        if (strcmp(ext, ".txt") == 0)
+            return true;
+    }
+
     return false;
 }
 
