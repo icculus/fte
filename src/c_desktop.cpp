@@ -27,6 +27,22 @@ bool IgnoreFilenameForDesktop(const char *path)
         fname = strrchr(path, '\\');
     fname = ((fname == NULL) ? path : (fname + 1));
 
+    const char *parent = "";
+    if (((int)(fname - path)) >= 2)
+    {
+        parent = fname - 2;
+        while (parent != path)
+        {
+            const char ch = *parent;
+            if ((ch == '/') || (ch == '\\'))
+            {
+                parent++;
+                break;
+            } // if
+            parent--;
+        }
+    }
+
     const char *ext = strrchr(fname, '.');
     if (ext == NULL)
         ext = "";
@@ -57,6 +73,18 @@ bool IgnoreFilenameForDesktop(const char *path)
     {
         if (strcmp(ext, ".txt") == 0)
             return true;
+    }
+
+    const char *gitparent = ".git";
+    const char *giteditor = "COMMIT_EDITMSG";
+    const size_t gplen = strlen(gitparent);
+    if (strncmp(parent, gitparent, gplen) == 0)
+    {
+        if ((parent[gplen] == '/') || (parent[gplen] == '\\'))
+        {
+            if (strcmp(fname, giteditor) == 0)
+                return true;
+        }
     }
 
     return false;
