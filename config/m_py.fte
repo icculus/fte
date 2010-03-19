@@ -156,7 +156,7 @@ colorize PYTHON {
 }
 
 mode PYTHON: PLAIN {
-    FileNameRx          = /\.\cPY$/;
+    FileNameRx          = /\.\c{{PY}|{SCONS}}$/;
     HilitOn             = 1;
     Colorizer           = "PYTHON";
     IndentMode          = "PLAIN";
