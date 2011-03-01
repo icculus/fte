@@ -33,8 +33,8 @@
 #define DCH_ALEFT 19
 #define DCH_ARIGHT 20
 
-#define ConMaxCols 256
-#define ConMaxRows 128
+#define ConMaxCols 1024
+#define ConMaxRows 1024
 
 #define csUp       0
 #define csDown     1

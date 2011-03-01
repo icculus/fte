@@ -515,7 +515,7 @@ void DrawCursor(int Show) {
 
 int ConPutBox(int X, int Y, int W, int H, PCell Cell) {
     unsigned int i;
-    unsigned char temp[256], attr;
+    unsigned char temp[1024], attr;
     unsigned char *p, *ps, *c, *ops;
     unsigned int len, x, l, ox, olen, skip;
 
