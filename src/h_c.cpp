@@ -127,16 +127,26 @@ int Hilit_C(EBuffer *BF, int /*LN*/, PCell B, int Pos, int Width, ELine *Line, h
                             continue;
                         }
                     }
-                    // allowed extras: u, l, ll, ul, ull, lu, llu
-                    int colored_u = 0;
-                    if (len && (toupper(*p) == 'U')) {
+                    // allowed extras: u, l, ll, ul, ull, lu, llu, i64
+                    if (len && (toupper(*p) == 'I')) {
                         ColorNext();
-                        colored_u = 1;
-                    }
-                    if (len && (toupper(*p) == 'L')) {
-                        ColorNext();
-                        if (len && (toupper(*p) == 'L')) ColorNext();
-                        if (! colored_u && len && (toupper(*p) == 'U')) ColorNext();
+                        if (toupper(*p) == '6') {
+                            ColorNext();
+                            if (toupper(*p) == '4') {
+                                ColorNext();
+                            }
+                        }
+                    } else {
+                        int colored_u = 0;
+                        if (len && (toupper(*p) == 'U')) {
+                            ColorNext();
+                            colored_u = 1;
+                        }
+                        if (len && (toupper(*p) == 'L')) {
+                            ColorNext();
+                            if (len && (toupper(*p) == 'L')) ColorNext();
+                            if (! colored_u && len && (toupper(*p) == 'U')) ColorNext();
+                        }
                     }
                     continue;
                 } else if (*p == '\'') {
