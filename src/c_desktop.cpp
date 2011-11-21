@@ -18,9 +18,23 @@ char DesktopFileName[256] = "";
 
 bool IgnoreFilenameForDesktop(const char *path)
 {
-    const char *tmpdir = "/tmp/";
+    static const char *tmpdir = NULL;
+    static const char *default_tmpdir = "/tmp/";
+    if (tmpdir == NULL)
+    {
+        tmpdir = getenv("TMPDIR");
+        if ( (tmpdir == NULL) || (strcmp(tmpdir, default_tmpdir) == 0) )
+            tmpdir = default_tmpdir;
+    }
+
     if (strncmp(path, tmpdir, strlen(tmpdir)) == 0)
-        return true;  // ignore all things in /tmp.
+        return true;  // ignore all things in $TMPDIR.
+
+    if (tmpdir != default_tmpdir)  // intentional pointer comparison.
+    {
+        if (strncmp(path, default_tmpdir, strlen(default_tmpdir)) == 0)
+            return true;  // ignore all things in /tmp.
+    }
 
     const char *fname = strrchr(path, '/');
     if (fname == NULL)
