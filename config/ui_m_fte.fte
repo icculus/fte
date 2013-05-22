@@ -143,7 +143,7 @@ menu Line {
     item "&Add line\tAlt+Enter"         { LineAdd }
     item "&Split line\tCtrl+Enter"      { LineSplit }
     item "&Join line\tCtrl+J"           { LineJoin }
-    item "Dup&licate line\tCtrl+D"      { LineDuplicate }
+    item "Duplicate line\tCtrl+D"       { LineDuplicate }
     item "&Delete line\tCtrl+Y"         { KillLine }
     item "&Center line"                  { LineCenter }
     item;
@@ -157,8 +157,8 @@ menu Line {
         MoveLineStart; ?FindReplace /^[\/][\/]  / // "xnc"; MoveDown
     }
     item;
-    item "&Uppercase"         { LineCaseUp }
-    item "&Lowercase"         { LineCaseDown }
+    item "&Uppercase\tCtrl+U"         { LineCaseUp }
+    item "&Lowercase\tCtrl+L"         { LineCaseDown }
     item "&Togglecase"        { LineCaseToggle }
     item "&Rot13"             { LineTrans 'A-Za-z' 'N-ZA-Mn-za-m' }
     item;

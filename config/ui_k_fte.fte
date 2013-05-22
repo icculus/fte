@@ -271,6 +271,8 @@ eventmap PLAIN: MODEL {
     key     [A+S]       { MainMenu 'S' }
     key     [A+U]       { BlockUnindent }
     key     [C+S]       { IncrementalSearch }
+    key     [C+U]       { LineCaseUp }
+    key     [C+L]       { LineCaseDown }
     
     key     [C+O_C+A]   { ToggleAutoIndent }
     key     [C+O_C+C]   { ToggleMatchCase }

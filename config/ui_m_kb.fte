@@ -183,8 +183,8 @@ menu Line {
     item "Delete to line &end\tAlt+End" { KillToLineEnd }
     item "Delete to li&ne start\tCtrl+Sh+BackSp" { KillToLineStart }
     item;
-    item "&Uppercase"         { LineCaseUp }
-    item "&Lowercase"         { LineCaseDown }
+    item "&Uppercase\tCtrl+U"         { LineCaseUp }
+    item "&Lowercase\tCtrl+L"         { LineCaseDown }
     item "&Togglecase"        { LineCaseToggle }
     item "&Rot13"             { LineTrans 'A-Za-z' 'N-ZA-Mn-za-m' }
     item;
