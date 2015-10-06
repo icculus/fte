@@ -624,7 +624,7 @@ int EBuffer::BlockWriteTo(char *AFileName, int Append) {
     PELine LL;
     int A, Z;
     FILE *fp;
-    int bc = 0, lc = 0, oldc = 0;
+    unsigned long long bc = 0, lc = 0, oldc = 0;
 
     AutoExtend = 0;
     if (CheckBlock() == 0) return 0;
@@ -691,13 +691,13 @@ int EBuffer::BlockWriteTo(char *AFileName, int Append) {
                     lc++;
                 }
             if (bc > 65536 + oldc) {
-                Msg(S_INFO, "Writing %s, %d lines, %d bytes.", AFileName, lc, bc);
+                Msg(S_INFO, "Writing %s, %llu lines, %llu bytes.", AFileName, lc, bc);
                 oldc = bc;
             }
         }
     }
     fclose(fp);
-    Msg(S_INFO, "Wrote %s, %d lines, %d bytes.", AFileName, lc, bc);
+    Msg(S_INFO, "Wrote %s, %llu lines, %llu bytes.", AFileName, lc, bc);
     return 1;
 error:
     if(fp != NULL)

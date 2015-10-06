@@ -37,7 +37,7 @@ char FileBuffer[RWBUFSIZE];
 int EBuffer::LoadFrom(char *AFileName) {
     int fd;
     int len = 0, partLen;
-    unsigned long numChars = 0, Lines = 0;
+    unsigned long long numChars = 0, Lines = 0;
     char *p, *e, *m = NULL;
     int lm = 0;
     int lf;
@@ -171,7 +171,7 @@ int EBuffer::LoadFrom(char *AFileName) {
             if (lchar != -1) // skip LINE terminator/separator
                 p++;
         } while (lf);
-        Msg(S_INFO, "Loading: %d lines, %d bytes.", Lines, numChars);
+        Msg(S_INFO, "Loading: %llu lines, %llu bytes.", Lines, numChars);
     }
 
     if ((RCount == 0) || (lm > 0) || !BFI(this, BFI_ForceNewLine)) {
@@ -321,7 +321,7 @@ int EBuffer::SaveTo(char *AFileName) {
     FILE *fp;
     int l;
     PELine L;
-    unsigned long ByteCount = 0, OldCount = 0;
+    unsigned long long ByteCount = 0, OldCount = 0;
 
     int f;
     char fold[64];
@@ -418,7 +418,7 @@ int EBuffer::SaveTo(char *AFileName) {
             }
         }
         if (ByteCount > OldCount + 65536) {
-            Msg(S_INFO, "Saving: %d lines, %d bytes.", l, ByteCount);
+            Msg(S_INFO, "Saving: %d lines, %llu bytes.", l, ByteCount);
             OldCount = ByteCount;
         }
     }
