@@ -35,7 +35,8 @@ I18NOPTIONS = $(XMBFLAG) $(REMAPFLAG) $(SYSTEM_X_LOCALE) $(USE_LOCALE)
 APPOPTIONS = -DDEFAULT_INTERNAL_CONFIG
 
 #gcc/g++
-COPTIONS = -Wall -Wpointer-arith -Wconversion -Wwrite-strings -Winline
+#COPTIONS = -Wall -Wpointer-arith -Wconversion -Wwrite-strings -Winline
+COPTIONS = -Wall -Wpointer-arith -Wwrite-strings -Winline
 
 #CC       = g++
 #LD       = g++
