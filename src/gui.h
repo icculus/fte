@@ -159,7 +159,11 @@ extern GUI *gui;
 
 extern unsigned long HaveGUIDialogs;
 
-void DieError(int rc, const char *msg, ...);
+void DieError(int rc, const char *msg, ...)
+#if defined(__GNUC__) || defined(__clang__)
+ __attribute__((noreturn))
+#endif
+;
 
 #define GF_OPEN    0x0001
 #define GF_SAVEAS  0x0002

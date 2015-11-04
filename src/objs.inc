@@ -99,6 +99,13 @@ clip_x11.$(OEXT) \
 con_i18n.$(OEXT) \
 g_nodlg.$(OEXT)
 
+SDLOBJS = $(UNIXOBJS) \
+g_text.$(OEXT) \
+menu_text.$(OEXT) \
+con_sdl.$(OEXT) \
+clip_x11.$(OEXT) \
+g_nodlg.$(OEXT)
+
 QOBJS = $(UNIXOBJS) \
 g_qt.$(OEXT) \
 g_qt_dlg.$(OEXT) \

@@ -2,13 +2,14 @@
 
 # Versions:
 #  xfte - using XLib (the most stable)
+#  sdlfte - using SDL2 (the most ...portable?)
 
 #  vfte - for Linux console directly (with limitations, see con_linux.cpp)
 
-#TARGETS = xfte vfte sfte
-TARGETS = xfte
+#TARGETS = xfte vfte sfte sdlfte
+TARGETS = xfte sdlfte
 
-PRIMARY = xfte
+PRIMARY = sdlfte
 
 # Comment or uncoment this two flags below if
 # you want to use:
@@ -139,8 +140,11 @@ INCDIR   =
 OPTIMIZE = -O3 -g
 #OPTIMIZE = -O2 -s
 
-CCFLAGS  = $(OPTIMIZE) $(I18NOPTIONS) $(APPOPTIONS) $(COPTIONS) -DUNIX $(UOS) $(INCDIR) $(XINCDIR) $(QINCDIR) $(MINCDIR) $(SINCDIR) $(USE_FILE_OFFSET64)
-LDFLAGS  = $(OPTIMIZE) $(LIBDIR) $(XLIBDIR) $(QLIBDIR) $(MLIBDIR)
+SDLCFLAGS := $(shell sdl2-config --cflags)
+SDLLIBS := $(shell sdl2-config --libs)
+
+CCFLAGS  = -arch i386 -arch x86_64 $(OPTIMIZE) $(I18NOPTIONS) $(APPOPTIONS) $(COPTIONS) -DUNIX $(UOS) $(INCDIR) $(XINCDIR) $(QINCDIR) $(MINCDIR) $(SINCDIR) $(USE_FILE_OFFSET64) $(SDLCFLAGS)
+LDFLAGS  = -arch i386 -arch x86_64 $(OPTIMIZE) $(LIBDIR) $(XLIBDIR) $(QLIBDIR) $(MLIBDIR)
 
 OEXT     = o
 
@@ -183,6 +187,9 @@ DEFAULT_FTE_CONFIG = defcfg.fte
 
 defcfg.cnf: $(DEFAULT_FTE_CONFIG) cfte
 	./cfte $(DEFAULT_FTE_CONFIG) defcfg.cnf
+
+sdlfte: $(OBJS) $(SDLOBJS)
+	$(LD) $(LDFLAGS) $(OBJS) $(SDLOBJS) $(SDLLIBS) -o sdlfte
 
 xfte: $(OBJS) $(XOBJS)
 	$(LD) $(LDFLAGS) $(OBJS) $(XOBJS) $(XLIBS) -o xfte
