@@ -12,6 +12,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #include "SDL.h"
 
@@ -70,11 +72,6 @@ static GPipe Pipes[MAX_PIPES] = {
     { 0 },
 };
 
-static long MouseAutoDelay = 40;
-static long MouseAutoRepeat = 200;
-static long MouseMultiClick = 300;
-
-static int setUserPosition = 0;
 static int initX = 0, initY = 0;
 static unsigned int ScreenCols = 80;
 static unsigned int ScreenRows = 40;
@@ -88,11 +85,6 @@ static int FontCX, FontCY;
 static int rc;
 static char winTitle[256] = "FTE";
 static char winSTitle[256] = "FTE";
-
-static char *CurSelectionData = 0;
-static int CurSelectionLen = 0;
-static int CurSelectionOwn = 0;
-static Time now;
 
 static SDL_Window *win = NULL;
 static SDL_Renderer *renderer = NULL;
@@ -151,9 +143,6 @@ static SDL_Surface *LoadFontToSurface()
 }
 
 static int SetupSDLWindow(int argc, char **argv) {
-    unsigned long mask;
-    XSetWindowAttributes setWindowAttributes;
-
     if (SDL_Init(SDL_INIT_VIDEO) == -1) {
         char buf[512];
         SDL_snprintf(buf, sizeof (buf), "Could not initialize SDL! (%s)", SDL_GetError());
@@ -330,7 +319,7 @@ static void DrawString(const unsigned char *temp, const unsigned int l,
     SDL_SetRenderDrawColor(renderer, bgcolor->r, bgcolor->g, bgcolor->b, 0xFF);
 
     SDL_Rect srcrect = { 0, 0, FontCX, FontCY };
-    SDL_Rect dstrect = { x, y, FontCX, FontCY };
+    SDL_Rect dstrect = { (int) x, (int) y, FontCX, FontCY };
     for (unsigned int i = 0; i < l; i++) {
         const Uint8 ch = (Uint8) temp[i];
         srcrect.x = ch * FontCX;
@@ -824,8 +813,8 @@ static void ProcessSDLEvent(const SDL_Event &sdlevent, TEvent *Event) {
                 if (sdlevent.motion.state & SDL_BUTTON_LMASK) Event->Mouse.Buttons |= 1;
                 if (sdlevent.motion.state & SDL_BUTTON_RMASK) Event->Mouse.Buttons |= 2;
                 if (sdlevent.motion.state & SDL_BUTTON_MMASK) Event->Mouse.Buttons |= 4;
-                LastMouseX = Event->Mouse.X;
-                LastMouseY = Event->Mouse.Y;
+                LastMouseX = (int) Event->Mouse.X;
+                LastMouseY = (int) Event->Mouse.Y;
             }
             break;
 
@@ -944,8 +933,6 @@ int ConGetEvent(TEventMask EventMask, TEvent *Event, int WaitTime, int Delete) {
     }
 
     fd_set read_fds;
-    int rc;
-
     Event->What = evNone;
     if (Pending.What != evNone) {
         *Event = Pending;
@@ -984,7 +971,7 @@ int ConGetEvent(TEventMask EventMask, TEvent *Event, int WaitTime, int Delete) {
 
         if (bHavePipes) {
             struct timeval timeout = { 0, 0 };  // poll the pipes.
-            if (select(sizeof(fd_set) * 8, FD_SET_CAST() &read_fds, NULL, NULL, &timeout) > 0) {
+            if (select((int) (sizeof(fd_set) * 8), FD_SET_CAST() &read_fds, NULL, NULL, &timeout) > 0) {
                 for (int pp = 0; pp < MAX_PIPES; pp++) {
                     if ((Pipes[pp].used) && (Pipes[pp].fd != -1)) {
                         if (FD_ISSET(Pipes[pp].fd, &read_fds)) {
@@ -1043,7 +1030,7 @@ int GetXSelection(int *len, char **data) {
     if (!*data)
         return -1;
 
-    *len = SDL_strlen(*data);
+    *len = (int) SDL_strlen(*data);
     return 0;
 }
 
@@ -1059,7 +1046,7 @@ int SetXSelection(int len, char *data) {
 }
 
 GUI::GUI(int &argc, char **argv, int XSize, int YSize) {
-    int o = 1;
+    //int o = 1;
 
     FIXME("handle -font argument");
     FIXME("handle -geometry argument");
