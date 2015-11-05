@@ -150,6 +150,8 @@ static int SetupSDLWindow(int argc, char **argv) {
         DieError(1, "XFTE Fatal: %s", buf);
     }
 
+    SDL_EnableScreenSaver();  // This isn't a game, just treat it like any other app.
+
     SDL_Surface *surface = LoadFontToSurface();
     if (!surface) {
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "FTE-SDL Fatal", "Could not load font!", NULL);
