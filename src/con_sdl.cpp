@@ -649,11 +649,13 @@ static void ResizeWindow(int ww, int hh) {
     int texw, texh, texaccess;
     SDL_QueryTexture(backbuffer, &texfmt, &texaccess, &texw, &texh);
 
+#if 0
     SDL_SetRenderTarget(renderer, NULL);
     const SDL_Rect r = { 0, 0, texw, texh };
     SDL_RenderCopy(renderer, backbuffer, &r, &r);
     SDL_RenderPresent(renderer);
     SDL_SetRenderTarget(renderer, backbuffer);
+#endif
 
     if ((ww > texw) || (hh > texh)) {
         SDL_DestroyTexture(backbuffer);
