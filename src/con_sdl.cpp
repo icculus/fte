@@ -1038,7 +1038,14 @@ int GetXSelection(int *len, char **data) {
 
 int SetXSelection(int len, char *data) {
     // SDL wants UTF-8 text, so we have to sort of pray this is latin1.
-    char *utf8 = SDL_iconv_string("UTF-8", "latin1", data, len);
+    char *str = (char *) SDL_malloc(len+1);  // copy so we are null-terminated.  :(
+    if (str == NULL)
+        return -1;
+
+    memcpy(str, data, len);
+    str[len] = '\0';
+    char *utf8 = SDL_iconv_string("UTF-8", "latin1", str, len+1);
+    SDL_free(str);
     if (utf8 == NULL)
         return -1;
 
@@ -1088,6 +1095,7 @@ GUI::GUI(int &argc, char **argv, int XSize, int YSize) {
         gui = this;
     else
         gui = NULL;
+
     fArgc = argc;
     fArgv = argv;
 }
