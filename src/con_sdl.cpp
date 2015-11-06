@@ -836,7 +836,7 @@ static void ProcessSDLEvent(const SDL_Event &sdlevent, TEvent *Event) {
 
         case SDL_MOUSEWHEEL:
             if (sdlevent.wheel.x || sdlevent.wheel.y) {
-                Event->What = evMouseDown;
+                Event->What = evCommand;
                 Event->Mouse.X = LastMouseX;
                 Event->Mouse.Y = LastMouseY;
                 Event->Mouse.Count = 1;
