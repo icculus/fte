@@ -1014,7 +1014,7 @@ int ConPutEvent(TEvent Event) {
 
 int ConFlush(void) {
     //XFlush(display);
-FIXME("prsent on flush?");
+FIXME("present on flush?");
 printf("flush\n");
     return 0;
 }
