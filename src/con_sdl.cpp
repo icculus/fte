@@ -232,7 +232,7 @@ static int SetupSDLWindow(int argc, char **argv) {
     const int winw = ScreenCols * FontCX;
     const int winh = ScreenRows * FontCY;
 
-    win = SDL_CreateWindow(winTitle, initX, initY, winw, winh, SDL_WINDOW_RESIZABLE
+    win = SDL_CreateWindow(winTitle, initX, initY, winw, winh, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN
                             #if !USE_SDL2_RENDER_API
                             | SDL_WINDOW_OPENGL
                             #endif
@@ -247,6 +247,27 @@ static int SetupSDLWindow(int argc, char **argv) {
         SDL_Quit();
         DieError(1, "XFTE Fatal: %s", buf);
     }
+
+    #ifndef __APPLE__  // mac os x gets its icon elsewhere.
+    {
+        const char *envr = SDL_getenv("HOME");
+        if (envr)
+        {
+            const char *fname = ".fte.bmp";
+            const size_t len = SDL_strlen(envr) + SDL_strlen(fname) + 2;
+            char *path = new char[len];
+            SDL_snprintf(path, len, "%s/%s", envr, fname);
+            SDL_Surface *icon = SDL_LoadBMP(path);
+            delete[] path;
+            if (icon)
+            {
+                SDL_SetColorKey(icon, 1, SDL_MapRGB(icon->format, 255, 255, 255));
+                SDL_SetWindowIcon(win, icon);
+                SDL_FreeSurface(icon);
+            }
+        }
+    }
+    #endif
 
     SDL_SetWindowMinimumSize(win, MIN_SCRWIDTH * FontCX, MIN_SCRHEIGHT * FontCY);
 
@@ -265,6 +286,7 @@ static int SetupSDLWindow(int argc, char **argv) {
     }
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xFF);
+    SDL_ShowWindow(win);
     SDL_RenderClear(renderer);
     SDL_RenderPresent(renderer);
 
@@ -317,6 +339,7 @@ static int SetupSDLWindow(int argc, char **argv) {
     SDL_GL_SetSwapInterval(0);
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    SDL_ShowWindow(win);
     glClear(GL_COLOR_BUFFER_BIT);
     SDL_GL_SwapWindow(win);
 
@@ -1214,7 +1237,6 @@ int ConGetEvent(TEventMask EventMask, TEvent *Event, int WaitTime, int Delete) {
         SDL_RenderPresent(renderer);
         SDL_SetRenderTarget(renderer, backbuffer);
 #else
-        glClear(GL_COLOR_BUFFER_BIT);
         unsigned char *dynamic_buffer = new unsigned char[ScreenCols * ScreenRows * 7 * 4];
         unsigned char *ptr = dynamic_buffer;
         for (int i = 0; i < ScreenCols * ScreenRows * 2; i += 2)
@@ -1257,6 +1279,8 @@ int ConGetEvent(TEventMask EventMask, TEvent *Event, int WaitTime, int Delete) {
 
         glBufferSubData(GL_ARRAY_BUFFER, 0, ScreenCols * ScreenRows * 7 * 4, dynamic_buffer);
         delete[] dynamic_buffer;
+
+        glClear(GL_COLOR_BUFFER_BIT);
         glDrawArrays(GL_QUADS, 0, (ScreenCols * ScreenRows) * 4);
         SDL_GL_SwapWindow(win);
 #endif
