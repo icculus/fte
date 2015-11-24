@@ -131,28 +131,6 @@ static void GenerateStaticVertices()
     GLfloat *static_vertices = new GLfloat[(ScreenCols * ScreenRows) * 16];
     GLfloat *ptr = static_vertices;
 
-/*
-*(ptr++) = -1.0f;
-*(ptr++) = -1.0f;
-*(ptr++) = 0.0f;
-*(ptr++) = 0.0f;
-
-*(ptr++) = 1.0f;
-*(ptr++) = -1.0f;
-*(ptr++) = 1.0f;
-*(ptr++) = 0.0f;
-
-*(ptr++) = 1.0f;
-*(ptr++) = 1.0f;
-*(ptr++) = 1.0f;
-*(ptr++) = 1.0f;
-
-*(ptr++) = -1.0f;
-*(ptr++) = 1.0f;
-*(ptr++) = 0.0f;
-*(ptr++) = 1.0f;
-*/
-
     const GLfloat minu = 0.0f;
     const GLfloat minv = 1.0f;
     const GLfloat maxu = 1.0f;
@@ -1256,17 +1234,6 @@ int ConGetEvent(TEventMask EventMask, TEvent *Event, int WaitTime, int Delete) {
                 *(ptr++) = bgcolor->b;
             }
         }
-/*
-for (int i = 0; i < 4; i++) {
-    *(ptr++) = 1;
-    *(ptr++) = 1;
-    *(ptr++) = 0;
-    *(ptr++) = 0;
-    *(ptr++) = 1;
-    *(ptr++) = 0;
-    *(ptr++) = 0;
-}
-*/
 
         // Set up the cursor.
         if (CursorVisible && bCursorShown)
