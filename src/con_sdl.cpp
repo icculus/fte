@@ -82,28 +82,14 @@ static unsigned char *ScreenBuffer = NULL;
 static int Refresh = 0;
 
 static int FontCX, FontCY;
-static int rc;
 static char winTitle[256] = "FTE";
 static char winSTitle[256] = "FTE";
 
 static SDL_Window *win = NULL;
-static SDL_Renderer *renderer = NULL;
-static SDL_Texture *font = NULL;
-static SDL_Texture *backbuffer = NULL;
 static bool bWindowDirty = false;
+static bool bCursorShown = true;
 
-static int AllocBuffer() {
-    unsigned char *p;
-    unsigned int i;
-
-    ScreenBuffer = (unsigned char *)malloc(2 * ScreenCols * ScreenRows);
-    if (ScreenBuffer == NULL) return -1;
-    for (i = 0, p = ScreenBuffer; i < ScreenCols * ScreenRows; i++) {
-        *p++ = 32;
-        *p++ = 0x07;
-    }
-    return 0;
-}
+#define USE_SDL2_RENDER_API 0
 
 struct rgb {
     Uint8 r, g, b;
@@ -128,6 +114,100 @@ static const rgb dcolors[] =
     { 255, 255, 255 },  //     white
 };
 
+#if USE_SDL2_RENDER_API
+static SDL_Renderer *renderer = NULL;
+static SDL_Texture *font = NULL;
+static SDL_Texture *backbuffer = NULL;
+#else
+#define GL_GLEXT_PROTOTYPES 1
+#include "SDL_opengl.h"
+#include "SDL_opengl_glext.h"
+static SDL_GLContext glctx = NULL;
+static GLuint font = 0;
+static GLuint static_vbo = 0;
+static GLuint vbo = 0;
+static void GenerateStaticVertices()
+{
+    GLfloat *static_vertices = new GLfloat[(ScreenCols * ScreenRows) * 16];
+    GLfloat *ptr = static_vertices;
+
+/*
+*(ptr++) = -1.0f;
+*(ptr++) = -1.0f;
+*(ptr++) = 0.0f;
+*(ptr++) = 0.0f;
+
+*(ptr++) = 1.0f;
+*(ptr++) = -1.0f;
+*(ptr++) = 1.0f;
+*(ptr++) = 0.0f;
+
+*(ptr++) = 1.0f;
+*(ptr++) = 1.0f;
+*(ptr++) = 1.0f;
+*(ptr++) = 1.0f;
+
+*(ptr++) = -1.0f;
+*(ptr++) = 1.0f;
+*(ptr++) = 0.0f;
+*(ptr++) = 1.0f;
+*/
+
+    const GLfloat minu = 0.0f;
+    const GLfloat minv = 1.0f;
+    const GLfloat maxu = 1.0f;
+    const GLfloat maxv = 0.0f;
+
+    for (int y = ScreenRows - 1; y >= 0; y--)
+    {
+        const GLfloat miny = ((((GLfloat) y) / (GLfloat) ScreenRows) * 2.0f) - 1.0f;
+        const GLfloat maxy = ((((GLfloat) (y+1)) / (GLfloat) ScreenRows) * 2.0f) - 1.0f;
+
+        for (int x = 0; x < ScreenCols; x++)
+        {
+            const GLfloat minx = ((((GLfloat) x) / (GLfloat) ScreenCols) * 2.0f) - 1.0f;
+            const GLfloat maxx = ((((GLfloat) (x+1)) / (GLfloat) ScreenCols) * 2.0f) - 1.0f;
+
+            *(ptr++) = minx;
+            *(ptr++) = miny;
+            *(ptr++) = minu;
+            *(ptr++) = minv;
+
+            *(ptr++) = maxx;
+            *(ptr++) = miny;
+            *(ptr++) = maxu;
+            *(ptr++) = minv;
+
+            *(ptr++) = maxx;
+            *(ptr++) = maxy;
+            *(ptr++) = maxu;
+            *(ptr++) = maxv;
+
+            *(ptr++) = minx;
+            *(ptr++) = maxy;
+            *(ptr++) = minu;
+            *(ptr++) = maxv;
+        }
+    }
+
+    glBufferData(GL_ARRAY_BUFFER, ScreenCols * ScreenRows * sizeof (GLfloat) * 16, static_vertices, GL_STATIC_DRAW);
+    delete[] static_vertices;
+}
+#endif
+
+static int AllocBuffer() {
+    unsigned char *p;
+    unsigned int i;
+
+    ScreenBuffer = (unsigned char *)malloc(2 * ScreenCols * ScreenRows);
+    if (ScreenBuffer == NULL) return -1;
+    for (i = 0, p = ScreenBuffer; i < ScreenCols * ScreenRows; i++) {
+        *p++ = 32;
+        *p++ = 0x07;
+    }
+    return 0;
+}
+
 static SDL_Surface *LoadFontToSurface()
 {
     FIXME("Load external TTF files, build a bitmap on the fly.");
@@ -138,7 +218,6 @@ static SDL_Surface *LoadFontToSurface()
         return NULL;
 
     SDL_Surface *surface = SDL_LoadBMP_RW(rwops, 1);
-    SDL_SetColorKey(surface, 1, SDL_MapRGB(surface->format, 0, 0, 0));
     return surface;
 }
 
@@ -174,7 +253,13 @@ static int SetupSDLWindow(int argc, char **argv) {
 #endif
     const int winw = ScreenCols * FontCX;
     const int winh = ScreenRows * FontCY;
-    win = SDL_CreateWindow(winTitle, initX, initY, winw, winh, SDL_WINDOW_RESIZABLE);
+
+    win = SDL_CreateWindow(winTitle, initX, initY, winw, winh, SDL_WINDOW_RESIZABLE
+                            #if !USE_SDL2_RENDER_API
+                            | SDL_WINDOW_OPENGL
+                            #endif
+    );
+
     if (!win)
     {
         char buf[512];
@@ -187,6 +272,8 @@ static int SetupSDLWindow(int argc, char **argv) {
 
     SDL_SetWindowMinimumSize(win, MIN_SCRWIDTH * FontCX, MIN_SCRHEIGHT * FontCY);
 
+#if USE_SDL2_RENDER_API
+    SDL_SetColorKey(surface, 1, SDL_MapRGB(surface->format, 0, 0, 0));
     renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_TARGETTEXTURE);
     if (!renderer)
     {
@@ -235,6 +322,182 @@ static int SetupSDLWindow(int argc, char **argv) {
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
     SDL_SetRenderTarget(renderer, backbuffer);
     SDL_RenderClear(renderer);
+#else
+    // !!! FIXME: check for errors.
+    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
+    //SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    //SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+
+    glctx = SDL_GL_CreateContext(win);
+    SDL_GL_MakeCurrent(win, glctx);
+    SDL_GL_SetSwapInterval(0);
+
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    SDL_GL_SwapWindow(win);
+
+    glActiveTexture(GL_TEXTURE0);
+
+    glEnable(GL_TEXTURE_2D);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_ALPHA_TEST);
+    glDisable(GL_SCISSOR_TEST);
+    glDisable(GL_BLEND);
+    glDisable(GL_CULL_FACE);
+
+    int drawablew, drawableh;
+    SDL_GL_GetDrawableSize(win, &drawablew, &drawableh);
+    glViewport(0, 0, drawablew, drawableh);
+
+    // set up a palette in the GL.
+    if (SDL_ISPIXELFORMAT_INDEXED(surface->format->format))
+    {
+        GLfloat palette[256];
+        const SDL_Palette *p = surface->format->palette;
+        const int ncolors = p->ncolors < 256 ? p->ncolors : 256;
+        for (int i = 0; i < ncolors; i++)
+            palette[i] = p->colors[i].r;
+        glPixelMapfv(GL_PIXEL_MAP_I_TO_R, ncolors, palette);
+        for (int i = 0; i < ncolors; i++)
+            palette[i] = p->colors[i].g;
+        glPixelMapfv(GL_PIXEL_MAP_I_TO_G, ncolors, palette);
+        for (int i = 0; i < ncolors; i++)
+            palette[i] = p->colors[i].b;
+        glPixelMapfv(GL_PIXEL_MAP_I_TO_B, ncolors, palette);
+        for (int i = 1; i < ncolors; i++)
+            palette[i] = 1.0f;
+        palette[0] = 0.0f;
+        glPixelMapfv(GL_PIXEL_MAP_I_TO_A, ncolors, palette);
+    }
+
+    glGenTextures(1, &font);
+    glBindTexture(GL_TEXTURE_2D, font);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, surface->pitch);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, surface->w, surface->h, 0, GL_COLOR_INDEX, GL_UNSIGNED_BYTE, surface->pixels);
+    SDL_FreeSurface(surface);
+
+    GLint ok = 0;
+
+    const char *vshader_src =
+        "attribute vec2 position;"
+        "attribute vec2 texposition;"
+        "attribute float cell;"
+        "attribute vec3 fgcolor;"
+        "attribute vec3 bgcolor;"
+        "varying vec4 v_fgcolor;"
+        "varying vec4 v_bgcolor;"
+        "void main() {"
+            "float x = float(cell + texposition.x) / 256.0;"
+            "gl_Position = vec4(position, 0.0, 1.0);"
+            "v_fgcolor = vec4(fgcolor, 1.0);"
+            "v_bgcolor = vec4(bgcolor, 1.0);"
+            "gl_TexCoord[0] = vec4(x, texposition.y, 0, 1);"
+        "}";
+
+    const GLint vcodelen = strlen(vshader_src);
+    const GLuint vshader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vshader, 1, (const GLchar**) &vshader_src, &vcodelen);
+    glCompileShader(vshader);
+
+    glGetShaderiv(vshader, GL_COMPILE_STATUS, &ok);
+    if (!ok)
+    {
+        GLchar error_buffer[512];
+        GLsizei len = 0;
+        glGetShaderInfoLog(vshader, sizeof (error_buffer), &len, error_buffer);
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Failed to compile vertex shader", error_buffer, win);
+        SDL_Quit();
+        DieError(1, "XFTE Fatal: bad vertex shader: %s", error_buffer);
+    }
+
+    const char *fshader_src =
+        "uniform sampler2D font;"
+        "varying vec4 v_fgcolor;"
+        "varying vec4 v_bgcolor;"
+        "void main() {"
+            "vec4 t0 = texture2D(font, gl_TexCoord[0].xy) * v_fgcolor;"
+            "gl_FragColor = mix(v_bgcolor, t0, t0.a);"
+        "}";
+
+    const GLint fcodelen = strlen(fshader_src);
+    const GLuint fshader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fshader, 1, (const GLchar**) &fshader_src, &fcodelen);
+    glCompileShader(fshader);
+
+    glGetShaderiv(fshader, GL_COMPILE_STATUS, &ok);
+    if (!ok)
+    {
+        GLchar error_buffer[512];
+        GLsizei len = 0;
+        glGetShaderInfoLog(fshader, sizeof (error_buffer), &len, error_buffer);
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Failed to compile fragment shader", error_buffer, win);
+        SDL_Quit();
+        DieError(1, "XFTE Fatal: bad fragment shader: %s", error_buffer);
+    }
+
+    const GLuint program = glCreateProgram();
+    glAttachShader(program, vshader);
+    glAttachShader(program, fshader);
+    glLinkProgram(program);
+
+    glGetProgramiv(program, GL_LINK_STATUS, &ok);
+    if (!ok)
+    {
+        GLchar error_buffer[512];
+        GLsizei len = 0;
+        glGetProgramInfoLog(program, sizeof (error_buffer), &len, error_buffer);
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Failed to link final shader program", error_buffer, win);
+        SDL_Quit();
+        DieError(1, "XFTE Fatal: can't link shaders: %s", error_buffer);
+    }
+
+    glUseProgram(program);
+
+    glUniform1i(glGetUniformLocation(program, "font"), 0);
+
+    glGenBuffers(1, &static_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, static_vbo);
+    GenerateStaticVertices();
+
+    GLint loc;
+
+    loc = glGetAttribLocation(program, (const GLchar *) "position");
+    glVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 16, (void *) 0);
+    glEnableVertexAttribArray(loc);
+
+    loc = glGetAttribLocation(program, (const GLchar *) "texposition");
+    glVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 16, (void *) 8);
+    glEnableVertexAttribArray(loc);
+
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, ScreenCols * ScreenRows * 7 * 4, NULL, GL_DYNAMIC_DRAW);
+
+    loc = glGetAttribLocation(program, (const GLchar *) "cell");
+    glVertexAttribPointer(loc, 1, GL_UNSIGNED_BYTE, GL_FALSE, 7, (void *) 0);
+    glEnableVertexAttribArray(loc);
+
+    loc = glGetAttribLocation(program, (const GLchar *) "fgcolor");
+    glVertexAttribPointer(loc, 3, GL_UNSIGNED_BYTE, GL_TRUE, 7, (void *) 1);
+    glEnableVertexAttribArray(loc);
+
+    loc = glGetAttribLocation(program, (const GLchar *) "bgcolor");
+    glVertexAttribPointer(loc, 3, GL_UNSIGNED_BYTE, GL_TRUE, 7, (void *) 4);
+    glEnableVertexAttribArray(loc);
+#endif
 
     return 0;
 }
@@ -253,6 +516,7 @@ int ConInit(int XSize, int YSize) {
 }
 
 int ConDone(void) {
+#if USE_SDL2_RENDER_API
     SDL_SetRenderTarget(renderer, NULL);
     SDL_DestroyTexture(backbuffer);
     backbuffer = NULL;
@@ -260,6 +524,20 @@ int ConDone(void) {
     font = NULL;
     SDL_DestroyRenderer(renderer);
     renderer = NULL;
+#else
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glDeleteTextures(1, &font);
+    font = 0;
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glDeleteBuffers(1, &static_vbo);
+    glDeleteBuffers(1, &vbo);
+    static_vbo = vbo = 0;
+    // !!! FIXME: delete shaders/programs.
+    SDL_GL_MakeCurrent(win, NULL);
+    SDL_GL_DeleteContext(glctx);
+    glctx = NULL;
+#endif
+
     SDL_DestroyWindow(win);
     win = NULL;
     SDL_Quit();
@@ -315,8 +593,10 @@ int ConGetTitle(char *Title, int MaxLen, char *STitle, int SMaxLen) {
 static void DrawString(const unsigned char *temp, const unsigned int l,
                        unsigned int x, unsigned int y, const unsigned char attr)
 {
+#if USE_SDL2_RENDER_API
     const rgb *fgcolor = &dcolors[attr % 16];
     const rgb *bgcolor = &dcolors[attr / 16];
+
     SDL_SetTextureColorMod(font, fgcolor->r, fgcolor->g, fgcolor->b);
     SDL_SetRenderDrawColor(renderer, bgcolor->r, bgcolor->g, bgcolor->b, 0xFF);
 
@@ -329,10 +609,13 @@ static void DrawString(const unsigned char *temp, const unsigned int l,
         SDL_RenderCopy(renderer, font, &srcrect, &dstrect);
         dstrect.x += FontCX;
     }
+#endif
+
     bWindowDirty = true;
 }
 
 void DrawCursor(int Show) {
+    bCursorShown = (Show != 0);
     if (CursorVisible) {
         unsigned char *p = CursorXYPos(CursorX, CursorY), attr;
         attr = p[1];
@@ -494,9 +777,9 @@ int ConSetSize(int X, int Y) {
     int i;
     int MX, MY;
 
-    p = NewBuffer = (unsigned char *) malloc(X * Y * 2);
+    p = NewBuffer = (unsigned char *) malloc(((X * Y) + 2) * 2);
     if (NewBuffer == NULL) return -1;
-    for (i = 0; i < X * Y; i++) {
+    for (i = 0; i < ((X * Y) + 2); i++) {
         *p++ = ' ';
         *p++ = 0x07;
     }
@@ -506,7 +789,7 @@ int ConSetSize(int X, int Y) {
     MY = ScreenRows;
     if (Y < MY)
 	MY = Y;
-    p = NewBuffer;
+    p = NewBuffer + 4;
     for (i = 0; i < MY; i++) {
         memcpy(p, CursorXYPos(0, i), MX * 2);
         p += X * 2;
@@ -518,6 +801,17 @@ int ConSetSize(int X, int Y) {
     //ConPutBox(0, 0, ScreenCols, ScreenRows, (PCell) ScreenBuffer);
     //if (Refresh == 0)
     //    XResizeWindow(display, win, ScreenCols * FontCX, ScreenRows * FontCY);
+
+#if !USE_SDL2_RENDER_API
+	glBindBuffer(GL_ARRAY_BUFFER, static_vbo);
+    GenerateStaticVertices();
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, ScreenCols * ScreenRows * 7 * 4, NULL, GL_DYNAMIC_DRAW);
+    int drawablew, drawableh;
+    SDL_GL_GetDrawableSize(win, &drawablew, &drawableh);
+    glViewport(0, 0, drawablew, drawableh);
+#endif
+
     return 0;
 }
 
@@ -645,17 +939,10 @@ static void UpdateWindow(int xx, int yy, int ww, int hh) {
 }
 
 static void ResizeWindow(int ww, int hh) {
+#if USE_SDL2_RENDER_API
     Uint32 texfmt;
     int texw, texh, texaccess;
     SDL_QueryTexture(backbuffer, &texfmt, &texaccess, &texw, &texh);
-
-#if 0
-    SDL_SetRenderTarget(renderer, NULL);
-    const SDL_Rect r = { 0, 0, texw, texh };
-    SDL_RenderCopy(renderer, backbuffer, &r, &r);
-    SDL_RenderPresent(renderer);
-    SDL_SetRenderTarget(renderer, backbuffer);
-#endif
 
     if ((ww > texw) || (hh > texh)) {
         SDL_DestroyTexture(backbuffer);
@@ -675,6 +962,11 @@ static void ResizeWindow(int ww, int hh) {
         SDL_RenderClear(renderer);
         bWindowDirty = true;
     }
+#else
+    glClear(GL_COLOR_BUFFER_BIT);
+    SDL_GL_SwapWindow(win);
+    bWindowDirty = true;
+#endif
 
     int ox = ScreenCols;
     int oy = ScreenRows;
@@ -935,6 +1227,7 @@ static TEvent Pending = { evNone };
 
 int ConGetEvent(TEventMask EventMask, TEvent *Event, int WaitTime, int Delete) {
     if (bWindowDirty) {
+#if USE_SDL2_RENDER_API
         int w, h;
         SDL_GetWindowSize(win, &w, &h);
         const SDL_Rect r = { 0, 0, w, h };
@@ -942,6 +1235,64 @@ int ConGetEvent(TEventMask EventMask, TEvent *Event, int WaitTime, int Delete) {
         SDL_RenderCopy(renderer, backbuffer, &r, &r);
         SDL_RenderPresent(renderer);
         SDL_SetRenderTarget(renderer, backbuffer);
+#else
+        glClear(GL_COLOR_BUFFER_BIT);
+        unsigned char *dynamic_buffer = new unsigned char[ScreenCols * ScreenRows * 7 * 4];
+        unsigned char *ptr = dynamic_buffer;
+        for (int i = 0; i < ScreenCols * ScreenRows * 2; i += 2)
+        {
+            const unsigned char cell = ScreenBuffer[i];
+            const unsigned char attr = ScreenBuffer[i+1];
+            const rgb *fgcolor = &dcolors[attr % 16];
+            const rgb *bgcolor = &dcolors[attr / 16];
+            for (int j = 0; j < 4; j++)
+            {
+                *(ptr++) = cell;
+                *(ptr++) = fgcolor->r;
+                *(ptr++) = fgcolor->g;
+                *(ptr++) = fgcolor->b;
+                *(ptr++) = bgcolor->r;
+                *(ptr++) = bgcolor->g;
+                *(ptr++) = bgcolor->b;
+            }
+        }
+/*
+for (int i = 0; i < 4; i++) {
+    *(ptr++) = 1;
+    *(ptr++) = 1;
+    *(ptr++) = 0;
+    *(ptr++) = 0;
+    *(ptr++) = 1;
+    *(ptr++) = 0;
+    *(ptr++) = 0;
+}
+*/
+
+        // Set up the cursor.
+        if (CursorVisible && bCursorShown)
+        {
+            unsigned char *p = CursorXYPos(CursorX, CursorY), attr;
+            attr = p[1] ^ 0x77;
+            const rgb *fgcolor = &dcolors[attr % 16];
+            const rgb *bgcolor = &dcolors[attr / 16];
+            ptr = dynamic_buffer + ((CursorY * ScreenCols) + CursorX) * 4 * 7;
+            for (int j = 0; j < 4; j++)
+            {
+                ptr++; // = cell;
+                *(ptr++) = fgcolor->r;
+                *(ptr++) = fgcolor->g;
+                *(ptr++) = fgcolor->b;
+                *(ptr++) = bgcolor->r;
+                *(ptr++) = bgcolor->g;
+                *(ptr++) = bgcolor->b;
+            }
+        }
+
+        glBufferSubData(GL_ARRAY_BUFFER, 0, ScreenCols * ScreenRows * 7 * 4, dynamic_buffer);
+        delete[] dynamic_buffer;
+        glDrawArrays(GL_QUADS, 0, (ScreenCols * ScreenRows) * 4);
+        SDL_GL_SwapWindow(win);
+#endif
         bWindowDirty = false;
     }
 
@@ -1250,8 +1601,7 @@ int GUI::RunProgram(int mode, char *Command) {
         if (mode == RUN_ASYNC)
             strcat(Cmd, " &");
     }
-    rc = system(Cmd);
-    return rc;
+    return system(Cmd);
 }
 
 char ConGetDrawChar(int index) {
