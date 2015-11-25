@@ -354,7 +354,7 @@ static int SetupSDLWindow(int argc, char **argv) {
 
     int drawablew, drawableh;
     SDL_GL_GetDrawableSize(win, &drawablew, &drawableh);
-    glViewport(0, 0, drawablew, drawableh);
+    glViewport(0, drawableh % FontCY, drawablew - (drawablew % FontCX), drawableh);
 
     // set up a palette in the GL.
     if (SDL_ISPIXELFORMAT_INDEXED(surface->format->format))
@@ -810,7 +810,7 @@ int ConSetSize(int X, int Y) {
     glBufferData(GL_ARRAY_BUFFER, ScreenCols * ScreenRows * 7 * 4, NULL, GL_DYNAMIC_DRAW);
     int drawablew, drawableh;
     SDL_GL_GetDrawableSize(win, &drawablew, &drawableh);
-    glViewport(0, 0, drawablew, drawableh);
+    glViewport(0, drawableh % FontCY, drawablew - (drawablew % FontCX), drawableh);
 #endif
 
     return 0;
