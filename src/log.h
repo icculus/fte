@@ -93,9 +93,9 @@ ENDFUNCAS_SAFE(HANDLE, unsigned long, GetNextHandle());
 #include <cstdlib>
 #endif
 
-#define bool  int
-#define true  1
-#define false 0
+//#define bool  int
+//#define true  1
+//#define false 0
 
 #if !defined(NO_NEW_CPP_FEATURES)
 using namespace std;
