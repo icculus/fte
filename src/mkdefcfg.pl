@@ -8,7 +8,7 @@ if(defined($infile)) {open(INFILE, "<$infile"); }
 else { open(INFILE, "<&STDIN"); }
 if(defined($outfile)) {open(OUTFILE, ">$outfile"); }
 else { open(OUTFILE, ">&STDOUT"); }
-print OUTFILE "/* do not edit */\nchar DefaultConfig[] = {\n";
+print OUTFILE "/* do not edit */\nunsigned char DefaultConfig[] = {\n";
 binmode INFILE; # NT needs this
 local($len);
 while (($len = read(INFILE, $buf, 256)) > 0) {
