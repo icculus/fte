@@ -1,4 +1,13 @@
 
+This was forked a _long_ time ago from http://fte.sf.net/ ... 
+
+The original README is below, but this fork diverged from the
+original decades ago. Don't send Marko bug reports for this fork.
+
+--ryan.
+
+
+
                            FTE Kit, Version 0.49.13
 
                      Copyright 1994-1998 by Marko Macek.
