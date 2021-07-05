@@ -190,7 +190,7 @@ defcfg.cnf: $(DEFAULT_FTE_CONFIG) cfte
 	./cfte $(DEFAULT_FTE_CONFIG) defcfg.cnf
 
 sdlfte: $(OBJS) $(SDLOBJS)
-	$(LD) $(LDFLAGS) $(OBJS) $(SDLOBJS) $(SDLLIBS) -o sdlfte
+	$(LD) $(LDFLAGS) $(OBJS) $(SDLOBJS) $(SDLLIBS) -o sdlfte -lGL
 
 xfte: $(OBJS) $(XOBJS)
 	$(LD) $(LDFLAGS) $(OBJS) $(XOBJS) $(XLIBS) -o xfte
