@@ -17,8 +17,9 @@ jobs:
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
-        sudo apt-get install cmake ninja-build libsdl2-dev libx11-dev
+        sudo apt-get install libsdl2-dev libx11-dev
     - name: Get fte sources
       uses: actions/checkout@v2
     - name: Build
-      run: make -f src/fte-unix.mak cfte xfte sdlfte
+      working-directory: ./src
+      run: make -f fte-unix.mak cfte xfte sdlfte
