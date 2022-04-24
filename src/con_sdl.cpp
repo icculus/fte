@@ -88,8 +88,9 @@ static char winSTitle[256] = "FTE";
 static SDL_Window *win = NULL;
 static bool bWindowDirty = false;
 static bool bCursorShown = true;
+static Uint32 dpimult = 1;
 
-#define USE_SDL2_RENDER_API 0
+#define USE_SDL2_RENDER_API 1
 
 struct rgb {
     Uint8 r, g, b;
@@ -232,11 +233,21 @@ static int SetupSDLWindow(int argc, char **argv) {
     const int winw = ScreenCols * FontCX;
     const int winh = ScreenRows * FontCY;
 
-    win = SDL_CreateWindow(winTitle, initX, initY, winw, winh, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN
-                            #if !USE_SDL2_RENDER_API
-                            | SDL_WINDOW_OPENGL
-                            #endif
-    );
+    Uint32 winflags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN;
+    #if !USE_SDL2_RENDER_API
+    winflags |= SDL_WINDOW_OPENGL;
+    #endif
+
+    dpimult = 1;
+    float hdpi = 96.0f;
+    if (SDL_GetDisplayDPI(0, NULL, &hdpi, NULL) == 0) {
+        if (hdpi > 180.0) {   // !!! FIXME: is that okay?
+            //SDL_Log("HIGHDPI");
+            dpimult = 2;
+        }
+    }
+
+    win = SDL_CreateWindow(winTitle, initX, initY, winw * dpimult, winh * dpimult, winflags);
 
     if (!win)
     {
@@ -269,7 +280,7 @@ static int SetupSDLWindow(int argc, char **argv) {
     }
     #endif
 
-    SDL_SetWindowMinimumSize(win, MIN_SCRWIDTH * FontCX, MIN_SCRHEIGHT * FontCY);
+    SDL_SetWindowMinimumSize(win, MIN_SCRWIDTH * FontCX * dpimult, MIN_SCRHEIGHT * FontCY * dpimult);
 
 #if USE_SDL2_RENDER_API
     SDL_SetColorKey(surface, 1, SDL_MapRGB(surface->format, 0, 0, 0));
@@ -338,7 +349,7 @@ static int SetupSDLWindow(int argc, char **argv) {
     SDL_GL_MakeCurrent(win, glctx);
     SDL_GL_SetSwapInterval(0);
 
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     SDL_ShowWindow(win);
     glClear(GL_COLOR_BUFFER_BIT);
     SDL_GL_SwapWindow(win);
@@ -945,7 +956,7 @@ static void ResizeWindow(int ww, int hh) {
     int texw, texh, texaccess;
     SDL_QueryTexture(backbuffer, &texfmt, &texaccess, &texw, &texh);
 
-    if ((ww > texw) || (hh > texh)) {
+    if ((ww != texw) || (hh != texh)) {
         SDL_DestroyTexture(backbuffer);
         backbuffer = SDL_CreateTexture(renderer, texfmt, texaccess, ww, hh);
         if (!backbuffer)
@@ -1091,7 +1102,7 @@ static void ProcessSDLEvent(const SDL_Event &sdlevent, TEvent *Event) {
                     break;
                 }
                 case SDL_WINDOWEVENT_SIZE_CHANGED: {
-                    ResizeWindow(sdlevent.window.data1, sdlevent.window.data2);
+                    ResizeWindow(sdlevent.window.data1 / dpimult, sdlevent.window.data2 / dpimult);
                     Event->What = evCommand;
                     Event->Msg.Command = cmResize;
                     break;
@@ -1229,11 +1240,15 @@ static TEvent Pending = { evNone };
 int ConGetEvent(TEventMask EventMask, TEvent *Event, int WaitTime, int Delete) {
     if (bWindowDirty) {
 #if USE_SDL2_RENDER_API
-        int w, h;
-        SDL_GetWindowSize(win, &w, &h);
-        const SDL_Rect r = { 0, 0, w, h };
+        int winw, winh;
+        SDL_GetWindowSize(win, &winw, &winh);
+        const SDL_Rect dstrect = { 0, 0, winw, winh };
+        Uint32 texfmt;
+        int texw, texh, texaccess;
+        SDL_QueryTexture(backbuffer, &texfmt, &texaccess, &texw, &texh);
+        const SDL_Rect srcrect = { 0, 0, texw, texh };
         SDL_SetRenderTarget(renderer, NULL);
-        SDL_RenderCopy(renderer, backbuffer, &r, &r);
+        SDL_RenderCopy(renderer, backbuffer, &srcrect, &dstrect);
         SDL_RenderPresent(renderer);
         SDL_SetRenderTarget(renderer, backbuffer);
 #else
