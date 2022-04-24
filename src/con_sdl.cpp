@@ -1121,8 +1121,8 @@ static void ProcessSDLEvent(const SDL_Event &sdlevent, TEvent *Event) {
             break;
 
         case SDL_MOUSEMOTION:
-            Event->Mouse.X = sdlevent.motion.x / FontCX;
-            Event->Mouse.Y = sdlevent.motion.y / FontCY;
+            Event->Mouse.X = (sdlevent.motion.x / dpimult) / FontCX;
+            Event->Mouse.Y = (sdlevent.motion.y / dpimult) / FontCY;
             if (LastMouseX != Event->Mouse.X || LastMouseY != Event->Mouse.Y) {
                 Event->What = evMouseMove;
                 Event->Mouse.Count = 1;
@@ -1137,8 +1137,8 @@ static void ProcessSDLEvent(const SDL_Event &sdlevent, TEvent *Event) {
 
         case SDL_MOUSEBUTTONUP:
         case SDL_MOUSEBUTTONDOWN:
-            Event->Mouse.X = sdlevent.button.x / FontCX;
-            Event->Mouse.Y = sdlevent.button.y / FontCY;
+            Event->Mouse.X = (sdlevent.motion.x / dpimult) / FontCX;
+            Event->Mouse.Y = (sdlevent.motion.y / dpimult) / FontCY;
             Event->What = (sdlevent.button.state == SDL_PRESSED) ? evMouseDown : evMouseUp;
             Event->Mouse.Count = sdlevent.button.clicks;
             Event->Mouse.Buttons = 0;
