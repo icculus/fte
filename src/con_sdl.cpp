@@ -1082,7 +1082,7 @@ static void ProcessSDLEvent(const SDL_Event &sdlevent, TEvent *Event) {
                 case SDL_WINDOWEVENT_EXPOSED: {
                     int w, h;
                     SDL_GetWindowSize(win, &w, &h);
-                    UpdateWindow(0, 0, w, h);
+                    UpdateWindow(0, 0, w / dpimult, h / dpimult);
                     break;
                 }
                 case SDL_WINDOWEVENT_SIZE_CHANGED: {
