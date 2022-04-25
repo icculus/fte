@@ -126,7 +126,12 @@ static SDL_Texture *backbuffer = NULL;
 static SDL_GLContext glctx = NULL;
 static GLuint font = 0;
 static GLuint static_vbo = 0;
-static GLuint vbo = 0;
+static GLuint vbos[64];
+static GLuint current_vbo = 0;
+static GLuint program = 0;
+static GLint cell_loc = 0;
+static GLint fgcolor_loc = 0;
+static GLint bgcolor_loc = 0;
 static void GenerateStaticVertices()
 {
     GLfloat *static_vertices = new GLfloat[(ScreenCols * ScreenRows) * 16];
@@ -444,7 +449,7 @@ static int SetupSDLWindow(int argc, char **argv) {
         DieError(1, "XFTE Fatal: bad fragment shader: %s", error_buffer);
     }
 
-    const GLuint program = glCreateProgram();
+    program = glCreateProgram();
     glAttachShader(program, vshader);
     glAttachShader(program, fshader);
     glLinkProgram(program);
@@ -459,6 +464,9 @@ static int SetupSDLWindow(int argc, char **argv) {
         SDL_Quit();
         DieError(1, "XFTE Fatal: can't link shaders: %s", error_buffer);
     }
+
+    glDeleteShader(vshader);
+    glDeleteShader(fshader);
 
     glUseProgram(program);
 
@@ -478,21 +486,24 @@ static int SetupSDLWindow(int argc, char **argv) {
     glVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 16, (void *) 8);
     glEnableVertexAttribArray(loc);
 
-    glGenBuffers(1, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, ScreenCols * ScreenRows * 7 * 4, NULL, GL_DYNAMIC_DRAW);
+    glGenBuffers(SDL_arraysize(vbos), vbos);
+    for (int i = 0; i < SDL_arraysize(vbos); i++) {
+        glBindBuffer(GL_ARRAY_BUFFER, vbos[i]);
+        glBufferData(GL_ARRAY_BUFFER, ScreenCols * ScreenRows * 7 * 4, NULL, GL_DYNAMIC_DRAW);
+    }
+    current_vbo = 0;
 
-    loc = glGetAttribLocation(program, (const GLchar *) "cell");
-    glVertexAttribPointer(loc, 1, GL_UNSIGNED_BYTE, GL_FALSE, 7, (void *) 0);
-    glEnableVertexAttribArray(loc);
+    cell_loc = glGetAttribLocation(program, (const GLchar *) "cell");
+    glVertexAttribPointer(cell_loc, 1, GL_UNSIGNED_BYTE, GL_FALSE, 7, (void *) 0);
+    glEnableVertexAttribArray(cell_loc);
 
-    loc = glGetAttribLocation(program, (const GLchar *) "fgcolor");
-    glVertexAttribPointer(loc, 3, GL_UNSIGNED_BYTE, GL_TRUE, 7, (void *) 1);
-    glEnableVertexAttribArray(loc);
+    fgcolor_loc = glGetAttribLocation(program, (const GLchar *) "fgcolor");
+    glVertexAttribPointer(fgcolor_loc, 3, GL_UNSIGNED_BYTE, GL_TRUE, 7, (void *) 1);
+    glEnableVertexAttribArray(fgcolor_loc);
 
-    loc = glGetAttribLocation(program, (const GLchar *) "bgcolor");
-    glVertexAttribPointer(loc, 3, GL_UNSIGNED_BYTE, GL_TRUE, 7, (void *) 4);
-    glEnableVertexAttribArray(loc);
+    bgcolor_loc = glGetAttribLocation(program, (const GLchar *) "bgcolor");
+    glVertexAttribPointer(bgcolor_loc, 3, GL_UNSIGNED_BYTE, GL_TRUE, 7, (void *) 4);
+    glEnableVertexAttribArray(bgcolor_loc);
 #endif
 
     return 0;
@@ -526,9 +537,12 @@ int ConDone(void) {
     font = 0;
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glDeleteBuffers(1, &static_vbo);
-    glDeleteBuffers(1, &vbo);
-    static_vbo = vbo = 0;
-    // !!! FIXME: delete shaders/programs.
+    glDeleteBuffers(SDL_arraysize(vbos), vbos);
+    static_vbo = 0;
+    SDL_zeroa(vbos);
+    glUseProgram(0);
+    glDeleteProgram(program);
+    program = 0;
     SDL_GL_MakeCurrent(win, NULL);
     SDL_GL_DeleteContext(glctx);
     glctx = NULL;
@@ -801,8 +815,11 @@ int ConSetSize(int X, int Y) {
 #if !USE_SDL2_RENDER_API
 	glBindBuffer(GL_ARRAY_BUFFER, static_vbo);
     GenerateStaticVertices();
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, ScreenCols * ScreenRows * 7 * 4, NULL, GL_DYNAMIC_DRAW);
+    for (int i = 0; i < SDL_arraysize(vbos); i++) {
+        glBindBuffer(GL_ARRAY_BUFFER, vbos[i]);
+        glBufferData(GL_ARRAY_BUFFER, ScreenCols * ScreenRows * 7 * 4, NULL, GL_DYNAMIC_DRAW);
+    }
+    current_vbo = 0;
     int drawablew, drawableh;
     SDL_GL_GetDrawableSize(win, &drawablew, &drawableh);
     glViewport(0, drawableh % FontCY, drawablew - (drawablew % FontCX), drawableh - (drawableh % FontCY));
@@ -1276,8 +1293,18 @@ int ConGetEvent(TEventMask EventMask, TEvent *Event, int WaitTime, int Delete) {
             }
         }
 
+        glBindBuffer(GL_ARRAY_BUFFER, vbos[current_vbo]);
         glBufferSubData(GL_ARRAY_BUFFER, 0, ScreenCols * ScreenRows * 7 * 4, dynamic_buffer);
+        glVertexAttribPointer(cell_loc, 1, GL_UNSIGNED_BYTE, GL_FALSE, 7, (void *) 0);
+        glVertexAttribPointer(fgcolor_loc, 3, GL_UNSIGNED_BYTE, GL_TRUE, 7, (void *) 1);
+        glVertexAttribPointer(bgcolor_loc, 3, GL_UNSIGNED_BYTE, GL_TRUE, 7, (void *) 4);
+
         delete[] dynamic_buffer;
+
+        current_vbo++;
+        if (current_vbo >= SDL_arraysize(vbos)) {
+            current_vbo = 0;
+        }
 
         glClear(GL_COLOR_BUFFER_BIT);
         glDrawArrays(GL_QUADS, 0, (ScreenCols * ScreenRows) * 4);
