@@ -90,7 +90,7 @@ static bool bWindowDirty = false;
 static bool bCursorShown = true;
 static Uint32 dpimult = 1;
 
-#define USE_SDL2_RENDER_API 1
+#define USE_SDL2_RENDER_API 0
 
 struct rgb {
     Uint8 r, g, b;
@@ -282,8 +282,9 @@ static int SetupSDLWindow(int argc, char **argv) {
 
     SDL_SetWindowMinimumSize(win, MIN_SCRWIDTH * FontCX * dpimult, MIN_SCRHEIGHT * FontCY * dpimult);
 
-#if USE_SDL2_RENDER_API
     SDL_SetColorKey(surface, 1, SDL_MapRGB(surface->format, 0, 0, 0));
+
+#if USE_SDL2_RENDER_API
     renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_TARGETTEXTURE);
     if (!renderer)
     {
@@ -367,38 +368,21 @@ static int SetupSDLWindow(int argc, char **argv) {
     SDL_GL_GetDrawableSize(win, &drawablew, &drawableh);
     glViewport(0, drawableh % FontCY, drawablew - (drawablew % FontCX), drawableh - (drawableh % FontCY));
 
-    // set up a palette in the GL.
-    if (SDL_ISPIXELFORMAT_INDEXED(surface->format->format))
-    {
-        GLfloat palette[256];
-        const SDL_Palette *p = surface->format->palette;
-        const int ncolors = p->ncolors < 256 ? p->ncolors : 256;
-        for (int i = 0; i < ncolors; i++)
-            palette[i] = p->colors[i].r;
-        glPixelMapfv(GL_PIXEL_MAP_I_TO_R, ncolors, palette);
-        for (int i = 0; i < ncolors; i++)
-            palette[i] = p->colors[i].g;
-        glPixelMapfv(GL_PIXEL_MAP_I_TO_G, ncolors, palette);
-        for (int i = 0; i < ncolors; i++)
-            palette[i] = p->colors[i].b;
-        glPixelMapfv(GL_PIXEL_MAP_I_TO_B, ncolors, palette);
-        for (int i = 1; i < ncolors; i++)
-            palette[i] = 1.0f;
-        palette[0] = 0.0f;
-        glPixelMapfv(GL_PIXEL_MAP_I_TO_A, ncolors, palette);
-    }
+    SDL_Surface *cvt = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA8888, 0);
+    SDL_FreeSurface(surface);
+    surface = cvt;
 
     glGenTextures(1, &font);
     glBindTexture(GL_TEXTURE_2D, font);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, surface->pitch);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, surface->w);    
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, surface->w, surface->h, 0, GL_COLOR_INDEX, GL_UNSIGNED_BYTE, surface->pixels);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, surface->w, surface->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, surface->pixels);
     SDL_FreeSurface(surface);
 
     GLint ok = 0;
