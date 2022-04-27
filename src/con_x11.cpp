@@ -1548,6 +1548,7 @@ int GUI::OpenPipe(char *Command, EModel *notify) {
             case -1: /* fail */
                 return -1;
             case 0: /* child */
+                setenv("LANG", "C", 1);  /* so we don't get UTF-8 stuff unnecesarily. */
                 signal(SIGPIPE, SIG_DFL);
                 close(pfd[0]);
                 close(0);
