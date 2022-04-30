@@ -1092,7 +1092,7 @@ static struct {
     { 0,                 0 }
 };
 
-static SDL_bool skip_next_textinput = SDL_FALSE;
+static int skip_next_textinput;
 
 static void ProcessSDLEvent(const SDL_Event &sdlevent, TEvent *Event) {
     switch (sdlevent.type) {
@@ -1173,8 +1173,12 @@ static void ProcessSDLEvent(const SDL_Event &sdlevent, TEvent *Event) {
         case SDL_KEYDOWN:
         //case SDL_KEYUP:  // con_x11.cpp has this commented out too. --ryan.
         {
-            if ( (sdlevent.key.state == SDL_PRESSED) && ((sdlevent.key.keysym.sym >= SDLK_KP_1) && (sdlevent.key.keysym.sym <= SDLK_KP_9)) ) {
-                skip_next_textinput = SDL_TRUE;
+            if (sdlevent.key.state == SDL_PRESSED) {
+                if (sdlevent.key.keysym.sym == SDLK_KP_0) {   // KP_0 is > KP_9.  :/
+                    skip_next_textinput = '0';
+                } else if ((sdlevent.key.keysym.sym >= SDLK_KP_1) && (sdlevent.key.keysym.sym <= SDLK_KP_9)) {
+                    skip_next_textinput = '1' + (((int)sdlevent.key.keysym.sym) - ((int) SDLK_KP_1));
+                }
             }
 
             unsigned int myState = 0;
@@ -1214,17 +1218,19 @@ static void ProcessSDLEvent(const SDL_Event &sdlevent, TEvent *Event) {
         break;
 
         case SDL_TEXTINPUT: {
-            if (skip_next_textinput) {
-                skip_next_textinput = SDL_FALSE;
-                break;
-            }
+            const int skip_textinput = skip_next_textinput;
+            skip_next_textinput = 0;
 
             // !!! FIXME: This is cheap, but disregard codepoints > 255.
             FIXME("...unicode?");
             // !!! FIXME: This is also cheap, but disregard multi-char strings.
             FIXME("multichar strings?");
             const Uint8 ch = (Uint8) sdlevent.text.text[0];
+
             if ((ch & 128) == 0) { // high bit set? Not low ascii.
+                if (skip_textinput && (((int) ch) == skip_textinput)) {
+                    break;
+                }
                 unsigned int myState = 0;
                 const SDL_Keymod mod = SDL_GetModState();
                 Event->What = evKeyDown;
