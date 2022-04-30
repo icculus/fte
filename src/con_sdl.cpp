@@ -1092,6 +1092,8 @@ static struct {
     { 0,                 0 }
 };
 
+static SDL_bool skip_next_textinput = SDL_FALSE;
+
 static void ProcessSDLEvent(const SDL_Event &sdlevent, TEvent *Event) {
     switch (sdlevent.type) {
         case SDL_WINDOWEVENT:
@@ -1171,6 +1173,10 @@ static void ProcessSDLEvent(const SDL_Event &sdlevent, TEvent *Event) {
         case SDL_KEYDOWN:
         //case SDL_KEYUP:  // con_x11.cpp has this commented out too. --ryan.
         {
+            if ( (sdlevent.key.state == SDL_PRESSED) && ((sdlevent.key.keysym.sym >= SDLK_KP_1) && (sdlevent.key.keysym.sym <= SDLK_KP_9)) ) {
+                skip_next_textinput = SDL_TRUE;
+            }
+
             unsigned int myState = 0;
             Event->What = (sdlevent.key.state == SDL_PRESSED) ? evKeyDown : evKeyUp;
 
@@ -1208,6 +1214,11 @@ static void ProcessSDLEvent(const SDL_Event &sdlevent, TEvent *Event) {
         break;
 
         case SDL_TEXTINPUT: {
+            if (skip_next_textinput) {
+                skip_next_textinput = SDL_FALSE;
+                break;
+            }
+
             // !!! FIXME: This is cheap, but disregard codepoints > 255.
             FIXME("...unicode?");
             // !!! FIXME: This is also cheap, but disregard multi-char strings.
