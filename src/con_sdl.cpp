@@ -1044,7 +1044,7 @@ static struct {
     { SDLK_LCTRL,          kbCtrl },
     { SDLK_RCTRL,          kbCtrl | kfGray },
     { SDLK_LALT,           kbAlt },
-    { SDLK_RALT,           kbAlt | kfGray },
+    //{ SDLK_RALT,           kbAlt | kfGray },
     { SDLK_LGUI,           kbAlt },
     { SDLK_RGUI,           kbAlt | kfGray },
     { SDLK_F1,             kbF1 },
@@ -1059,7 +1059,7 @@ static struct {
     { SDLK_F10,            kbF10 },
     { SDLK_F11,            kbF11 },
     { SDLK_F12,            kbF12 },
-    { SDLK_KP_0,           '0' | kfGray },
+    { SDLK_KP_0,           kbIns | kfGray },
     { SDLK_KP_1,           kbEnd | kfGray },
     { SDLK_KP_2,           kbDown | kfGray },
     { SDLK_KP_3,           kbPgDn | kfGray },
@@ -1069,7 +1069,7 @@ static struct {
     { SDLK_KP_7,           kbHome | kfGray },
     { SDLK_KP_8,           kbUp | kfGray },
     { SDLK_KP_9,           kbPgUp | kfGray },
-    //{ SDLK_KP_DECIMAL,     '.' | kfGray },
+    { SDLK_KP_PERIOD,     kbDel | kfGray },
 
     //{ SDLK_KP_HOME,        kbHome | kfGray },
     //{ SDLK_KP_UP,          kbUp | kfGray },
@@ -1174,8 +1174,25 @@ static void ProcessSDLEvent(const SDL_Event &sdlevent, TEvent *Event) {
         //case SDL_KEYUP:  // con_x11.cpp has this commented out too. --ryan.
         {
             if (sdlevent.key.state == SDL_PRESSED) {
+                #if 0
+                const SDL_bool numlock = (sdlevent.key.keysym.mod & KMOD_NUM) ? SDL_TRUE : SDL_FALSE;
+                if (numlock && ((sdlevent.key.keysym.sym == SDLK_KP_0) || ((sdlevent.key.keysym.sym >= SDLK_KP_1) && (sdlevent.key.keysym.sym <= SDLK_KP_9)))) {
+                    Event->What = evNone;
+                    return;  // let SDL_TEXTINPUT handle it.
+                }
+                #endif
+
+                // HACK otherwise this gets two ALT+- in a row, so you can't
+                //  jump to a matching bracket.  :/
+                if (sdlevent.key.keysym.sym == '-') {
+                    Event->What = evNone;
+                    return;  // let SDL_TEXTINPUT handle it.
+                }
+
                 if (sdlevent.key.keysym.sym == SDLK_KP_0) {   // KP_0 is > KP_9.  :/
                     skip_next_textinput = '0';
+                } else if (sdlevent.key.keysym.sym == SDLK_KP_PERIOD) {
+                    skip_next_textinput = '.';
                 } else if ((sdlevent.key.keysym.sym >= SDLK_KP_1) && (sdlevent.key.keysym.sym <= SDLK_KP_9)) {
                     skip_next_textinput = '1' + (((int)sdlevent.key.keysym.sym) - ((int) SDLK_KP_1));
                 }
@@ -1214,6 +1231,8 @@ static void ProcessSDLEvent(const SDL_Event &sdlevent, TEvent *Event) {
                     Event->What = evNone;
                 }
             }
+
+            //if (Event->What != evNone) { printf("EVENT what=%d, KeyCode=%d\n", (int) Event->What, (int) Event->Key.Code); }
         }
         break;
 
@@ -1226,6 +1245,8 @@ static void ProcessSDLEvent(const SDL_Event &sdlevent, TEvent *Event) {
             // !!! FIXME: This is also cheap, but disregard multi-char strings.
             FIXME("multichar strings?");
             const Uint8 ch = (Uint8) sdlevent.text.text[0];
+
+            //printf("TEXTINPUT skip=%d ch=%d\n", (int) skip_textinput, (int) ch);
 
             if ((ch & 128) == 0) { // high bit set? Not low ascii.
                 if (skip_textinput && (((int) ch) == skip_textinput)) {
