@@ -90,7 +90,7 @@ static bool bWindowDirty = false;
 static bool bCursorShown = true;
 static Uint32 dpimult = 1;
 
-#define USE_SDL2_RENDER_API 0
+#define USE_SDL2_RENDER_API 1
 
 struct rgb {
     Uint8 r, g, b;
@@ -118,7 +118,6 @@ static const rgb dcolors[] =
 #if USE_SDL2_RENDER_API
 static SDL_Renderer *renderer = NULL;
 static SDL_Texture *font = NULL;
-static SDL_Texture *backbuffer = NULL;
 #else
 #define GL_GLEXT_PROTOTYPES 1
 #include "SDL_opengl.h"
@@ -290,7 +289,7 @@ static int SetupSDLWindow(int argc, char **argv) {
     SDL_SetColorKey(surface, 1, SDL_MapRGB(surface->format, 0, 0, 0));
 
 #if USE_SDL2_RENDER_API
-    renderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_TARGETTEXTURE);
+    renderer = SDL_CreateRenderer(win, -1, 0);
     if (!renderer)
     {
         char buf[512];
@@ -307,6 +306,8 @@ static int SetupSDLWindow(int argc, char **argv) {
     SDL_RenderClear(renderer);
     SDL_RenderPresent(renderer);
 
+    SDL_RenderSetLogicalSize(renderer, winw, winh);
+
     font = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_FreeSurface(surface);
     if (!font)
@@ -320,25 +321,8 @@ static int SetupSDLWindow(int argc, char **argv) {
         DieError(1, "XFTE Fatal: %s", buf);
     }
 
-    Uint32 fmt;  // presumably SDL picked the best format for the font texture, so use that.
-    SDL_QueryTexture(font, &fmt, NULL, NULL, NULL);
-    backbuffer = SDL_CreateTexture(renderer, fmt, SDL_TEXTUREACCESS_TARGET, winw, winh);
-    if (!backbuffer)
-    {
-        char buf[512];
-        SDL_snprintf(buf, sizeof (buf), "Could not create backbuffer! (%s)", SDL_GetError());
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "FTE-SDL Fatal", buf, win);
-        SDL_DestroyTexture(font);
-        SDL_DestroyRenderer(renderer);
-        SDL_DestroyWindow(win);
-        SDL_Quit();
-        DieError(1, "XFTE Fatal: %s", buf);
-    }
-
     SDL_SetTextureBlendMode(font, SDL_BLENDMODE_BLEND);
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
-    SDL_SetRenderTarget(renderer, backbuffer);
-    SDL_RenderClear(renderer);
 #else
     // !!! FIXME: check for errors.
     SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
@@ -524,9 +508,6 @@ int ConInit(int XSize, int YSize) {
 
 int ConDone(void) {
 #if USE_SDL2_RENDER_API
-    SDL_SetRenderTarget(renderer, NULL);
-    SDL_DestroyTexture(backbuffer);
-    backbuffer = NULL;
     SDL_DestroyTexture(font);
     font = NULL;
     SDL_DestroyRenderer(renderer);
@@ -603,24 +584,6 @@ int ConGetTitle(char *Title, int MaxLen, char *STitle, int SMaxLen) {
 static void DrawString(const unsigned char *temp, const unsigned int l,
                        unsigned int x, unsigned int y, const unsigned char attr)
 {
-#if USE_SDL2_RENDER_API
-    const rgb *fgcolor = &dcolors[attr % 16];
-    const rgb *bgcolor = &dcolors[attr / 16];
-
-    SDL_SetTextureColorMod(font, fgcolor->r, fgcolor->g, fgcolor->b);
-    SDL_SetRenderDrawColor(renderer, bgcolor->r, bgcolor->g, bgcolor->b, 0xFF);
-
-    SDL_Rect srcrect = { 0, 0, FontCX, FontCY };
-    SDL_Rect dstrect = { (int) x, (int) y, FontCX, FontCY };
-    for (unsigned int i = 0; i < l; i++) {
-        const Uint8 ch = (Uint8) temp[i];
-        srcrect.x = ch * FontCX;
-        SDL_RenderFillRect(renderer, &dstrect);
-        SDL_RenderCopy(renderer, font, &srcrect, &dstrect);
-        dstrect.x += FontCX;
-    }
-#endif
-
     bWindowDirty = true;
 }
 
@@ -953,33 +916,16 @@ static void UpdateWindow(int xx, int yy, int ww, int hh) {
 
 static void ResizeWindow(int ww, int hh) {
 #if USE_SDL2_RENDER_API
-    Uint32 texfmt;
-    int texw, texh, texaccess;
-    SDL_QueryTexture(backbuffer, &texfmt, &texaccess, &texw, &texh);
-
-    if ((ww != texw) || (hh != texh)) {
-        SDL_DestroyTexture(backbuffer);
-        backbuffer = SDL_CreateTexture(renderer, texfmt, texaccess, ww, hh);
-        if (!backbuffer)
-        {
-            char buf[512];
-            SDL_snprintf(buf, sizeof (buf), "Could not create backbuffer! (%s)", SDL_GetError());
-            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "FTE-SDL Fatal", buf, win);
-            SDL_DestroyTexture(font);
-            SDL_DestroyRenderer(renderer);
-            SDL_DestroyWindow(win);
-            SDL_Quit();
-            DieError(1, "XFTE Fatal: %s", buf);
-        }
-        SDL_SetRenderTarget(renderer, backbuffer);
-        SDL_RenderClear(renderer);
-        bWindowDirty = true;
-    }
+    SDL_RenderSetLogicalSize(renderer, ww, hh);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
+    SDL_RenderPresent(renderer);
 #else
     glClear(GL_COLOR_BUFFER_BIT);
     SDL_GL_SwapWindow(win);
-    bWindowDirty = true;
 #endif
+
+    bWindowDirty = true;
 
     int ox = ScreenCols;
     int oy = ScreenRows;
@@ -1285,17 +1231,49 @@ static TEvent Pending = { evNone };
 int ConGetEvent(TEventMask EventMask, TEvent *Event, int WaitTime, int Delete) {
     if (bWindowDirty) {
 #if USE_SDL2_RENDER_API
-        int winw, winh;
-        SDL_GetWindowSize(win, &winw, &winh);
-        const SDL_Rect dstrect = { 0, 0, winw, winh };
-        Uint32 texfmt;
-        int texw, texh, texaccess;
-        SDL_QueryTexture(backbuffer, &texfmt, &texaccess, &texw, &texh);
-        const SDL_Rect srcrect = { 0, 0, texw, texh };
-        SDL_SetRenderTarget(renderer, NULL);
-        SDL_RenderCopy(renderer, backbuffer, &srcrect, &dstrect);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderClear(renderer);
+
+        unsigned char *cursorptr = NULL;
+        unsigned char origcursorattr = 0;
+        // Set up the cursor.
+        if (CursorVisible && bCursorShown)
+        {
+            cursorptr = CursorXYPos(CursorX, CursorY);
+            cursorptr++;
+            origcursorattr = *cursorptr;
+            *cursorptr = origcursorattr ^ 0x77;
+        }
+
+        int x = 0, y = 0;
+        for (int i = 0; i < ScreenCols * ScreenRows * 2; i += 2) {
+            const unsigned char cell = ScreenBuffer[i];
+            const unsigned char attr = ScreenBuffer[i+1];
+            const rgb *fgcolor = &dcolors[attr % 16];
+            const rgb *bgcolor = &dcolors[attr / 16];
+
+            const SDL_Rect srcrect = { cell * FontCX, 0, FontCX, FontCY };
+            const SDL_Rect dstrect = { (int) (x * FontCX), (int) (y * FontCY), FontCX, FontCY };
+
+            SDL_SetTextureColorMod(font, fgcolor->r, fgcolor->g, fgcolor->b);
+            if (bgcolor->r || bgcolor->g || bgcolor->b) {
+                SDL_SetRenderDrawColor(renderer, bgcolor->r, bgcolor->g, bgcolor->b, 0xFF);
+                SDL_RenderFillRect(renderer, &dstrect);
+            }
+            SDL_RenderCopy(renderer, font, &srcrect, &dstrect);
+
+            x++;
+            if (x >= ScreenCols) {
+                x = 0;
+                y++;
+            }
+        }
+
+        if (cursorptr) {
+            *cursorptr = origcursorattr;
+        }
+
         SDL_RenderPresent(renderer);
-        SDL_SetRenderTarget(renderer, backbuffer);
 #else
         unsigned char *dynamic_buffer = new unsigned char[ScreenCols * ScreenRows * 7 * 4];
         unsigned char *ptr = dynamic_buffer;
