@@ -1189,6 +1189,12 @@ static void ProcessSDLEvent(const SDL_Event &sdlevent, TEvent *Event) {
                     return;  // let SDL_TEXTINPUT handle it.
                 }
 
+                // HACK otherwise this gets two ALT-q in a row, closing two files at a time!
+                if ((sdlevent.key.keysym.sym == 'q') && (sdlevent.key.keysym.mod & KMOD_ALT)) {
+                    Event->What = evNone;
+                    return;  // let SDL_TEXTINPUT handle it.
+                }
+
                 if (sdlevent.key.keysym.sym == SDLK_KP_0) {   // KP_0 is > KP_9.  :/
                     skip_next_textinput = '0';
                 } else if (sdlevent.key.keysym.sym == SDLK_KP_PERIOD) {
