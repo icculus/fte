@@ -1069,9 +1069,15 @@ static void ProcessSDLEvent(const SDL_Event &sdlevent, TEvent *Event) {
             Event->Msg.Command = cmClose;
             break;
 
-        case SDL_MOUSEMOTION:
-            Event->Mouse.X = (sdlevent.motion.x / dpimult) / FontCX;
-            Event->Mouse.Y = (sdlevent.motion.y / dpimult) / FontCY;
+        case SDL_MOUSEMOTION: {
+            int mousex = sdlevent.motion.x;
+            int mousey = sdlevent.motion.y;
+            #if !USE_SDL2_RENDER_API  // logical scaling handles this for the render api.
+            mousex /= dpimult;
+            mousey /= dpimult;
+            #endif
+            Event->Mouse.X = (mousex / FontCX);
+            Event->Mouse.Y = (mousey / FontCY);
             if (LastMouseX != Event->Mouse.X || LastMouseY != Event->Mouse.Y) {
                 Event->What = evMouseMove;
                 Event->Mouse.Count = 1;
@@ -1083,11 +1089,18 @@ static void ProcessSDLEvent(const SDL_Event &sdlevent, TEvent *Event) {
                 LastMouseY = (int) Event->Mouse.Y;
             }
             break;
+        }
 
         case SDL_MOUSEBUTTONUP:
-        case SDL_MOUSEBUTTONDOWN:
-            Event->Mouse.X = (sdlevent.motion.x / dpimult) / FontCX;
-            Event->Mouse.Y = (sdlevent.motion.y / dpimult) / FontCY;
+        case SDL_MOUSEBUTTONDOWN: {
+            int mousex = sdlevent.button.x;
+            int mousey = sdlevent.button.y;
+            #if !USE_SDL2_RENDER_API  // logical scaling handles this for the render api.
+            mousex /= dpimult;
+            mousey /= dpimult;
+            #endif
+            Event->Mouse.X = mousex / FontCX;
+            Event->Mouse.Y = mousey / FontCY;
             Event->What = (sdlevent.button.state == SDL_PRESSED) ? evMouseDown : evMouseUp;
             Event->Mouse.Count = sdlevent.button.clicks;
             Event->Mouse.Buttons = 0;
@@ -1095,6 +1108,7 @@ static void ProcessSDLEvent(const SDL_Event &sdlevent, TEvent *Event) {
             if (sdlevent.button.button == SDL_BUTTON_RIGHT) Event->Mouse.Buttons |= 2;
             if (sdlevent.button.button == SDL_BUTTON_MIDDLE) Event->Mouse.Buttons |= 4;
             break;
+        }
 
         case SDL_MOUSEWHEEL:
             if (sdlevent.wheel.x || sdlevent.wheel.y) {
