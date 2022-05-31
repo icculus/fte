@@ -1559,7 +1559,7 @@ int GUI::OpenPipe(char *Command, EModel *notify) {
                 dup2(pfd[1], 1);
                 dup2(pfd[1], 2);
                 close(pfd[1]);
-                exit(system(Command));
+                _exit(system(Command));
             default:
                 close(pfd[1]);
                 fcntl(pfd[0], F_SETFL, O_NONBLOCK);
