@@ -232,7 +232,7 @@ EMark *EMarkIndex::pushMark(EBuffer *aBuffer, EPoint P) {
         }
     }
     char name[20];
-    sprintf(name, "#%d", stackTop + 1);
+    snprintf(name, sizeof (name), "#%d", stackTop + 1);
     return insert(name, aBuffer, P);
 }
 
@@ -250,7 +250,7 @@ int EMarkIndex::popMark(EView *aView) {
     if (stackTop == -1)
         return 0;
     char name[20];
-    sprintf(name, "#%d", stackTop);
+    snprintf(name, sizeof (name), "#%d", stackTop);
     if (view(aView, name) == 0)
         return 0;
     assert(remove(name) == 1);

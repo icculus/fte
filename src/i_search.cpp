@@ -173,7 +173,7 @@ void ExISearch::RepaintStatus() {
     case IOk: default: p = ""; break;
     }
     
-    sprintf(s, "ISearch [%s]%s", ISearchStr, p);
+    snprintf(s, sizeof (s), "ISearch [%s]%s", ISearchStr, p);
     MoveCh(B, ' ', 0x17, W);
     MoveStr(B, 0, W, s, 0x17, W);
     ConPutBox(0, H - 1, W, 1, B);

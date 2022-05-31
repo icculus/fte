@@ -279,7 +279,7 @@ void EListPort::RepaintStatus() {
     if (View->CurMsg == 0) {
         if (List->Title)
             MoveStr(B, 0, W, List->Title, SColor, W);
-        sprintf(s, "%c%d/%d", ConGetDrawChar(DCH_V), Row + 1, List->Count);
+        snprintf(s, sizeof (s), "%c%d/%d", ConGetDrawChar(DCH_V), Row + 1, List->Count);
         MoveStr(B, W - strlen(s), W, s, SColor, W);
     } else {
         MoveStr(B, 0, W, View->CurMsg, SColor, W);

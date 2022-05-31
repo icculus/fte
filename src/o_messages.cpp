@@ -83,7 +83,7 @@ void EMessages::NotifyDelete(EModel *Deleting) {
         if (ErrList[i]->Buf == Deleting) {
             /* NOT NEEDED!
              char bk[16];
-             sprintf(bk, "_MSG.%d", i);
+             snprintf(bk, sizeof (bk), "_MSG.%d", i);
              ((EBuffer *)Deleting)->RemoveBookmark(bk);
              */
             ErrList[i]->Buf = 0;
@@ -122,7 +122,7 @@ void EMessages::AddFileError(EBuffer *B, int err) {
 
     assert(err >= 0 && err < ErrCount);
 
-    sprintf(bk, "_MSG.%d", err);
+    snprintf(bk, sizeof (bk), "_MSG.%d", err);
     P.Col = 0;
     P.Row = ErrList[err]->line - 1; // offset 0
 
@@ -164,13 +164,13 @@ int EMessages::RunPipe(char *ADir, char *ACommand) {
     {
         char s[2 * MAXPATH * 4];
 
-        sprintf(s, "[running '%s' in '%s']", Command, Directory);
+        snprintf(s, sizeof (s), "[running '%s' in '%s']", Command, Directory);
         AddError(0, -1, 0, s);
     }
 
     {
         char s[MAXPATH * 2];
-        sprintf(s, "Messages [%s]: %s", Directory, Command);
+        snprintf(s, sizeof (s), "Messages [%s]: %s", Directory, Command);
         SetTitle(s);
     }
     
@@ -194,7 +194,7 @@ int EMessages::ExecCommand(int Command, ExState &State) {
         {
             char s[30];
             
-            sprintf(s, "[aborted, status=%d]", ReturnCode);
+            snprintf(s, sizeof (s), "[aborted, status=%d]", ReturnCode);
             AddError(0, -1, 0, s);
         }
         return ErOK;
@@ -242,7 +242,7 @@ void EMessages::FreeErrors() {
         for (int i = 0; i < ErrCount; i++) {
             if (ErrList[i]->Buf != 0) {
                 char bk[16];
-                sprintf(bk, "_MSG.%d", i);
+                snprintf(bk, sizeof (bk), "_MSG.%d", i);
                 ((EBuffer *)(ErrList[i]->Buf))->RemoveBookmark(bk);
             }
             free(ErrList[i]->msg);
@@ -477,7 +477,7 @@ void EMessages::GetErrors() {
     if (!Running && WasRunning) {
         char s[30];
         
-        sprintf(s, "[done, status=%d]", ReturnCode);
+        snprintf(s, sizeof (s), "[done, status=%d]", ReturnCode);
         AddError(0, -1, 0, s);
     }
     //UpdateList();
@@ -540,7 +540,7 @@ void EMessages::ShowError(EView *V, int err) {
 
                 V->SwitchToModel(ErrList[err]->Buf);
 
-                sprintf(bk, "_MSG.%d", err);
+                snprintf(bk, sizeof (bk), "_MSG.%d", err);
                 ErrList[err]->Buf->GotoBookmark(bk);
             } else {
                 if (FileLoad(0, ErrList[err]->file, 0, V) == 1) {
@@ -610,7 +610,7 @@ void EMessages::GetName(char *AName, int MaxLen) {
 }
 
 void EMessages::GetInfo(char *AInfo, int MaxLen) {
-    sprintf(AInfo, 
+    snprintf(AInfo, MaxLen,
             "%2d %04d/%03d Messages: %d (%s) ",
             ModelNo,
             Row, Count,
@@ -625,7 +625,7 @@ void EMessages::GetPath(char *APath, int MaxLen) {
 }
 
 void EMessages::GetTitle(char *ATitle, int MaxLen, char *ASTitle, int SMaxLen) {
-    sprintf(ATitle, "Messages: %s", Command);
+    snprintf(ATitle, MaxLen, "Messages: %s", Command);
     strncpy(ASTitle, "Messages", SMaxLen);
     ASTitle[SMaxLen - 1] = 0;
 }

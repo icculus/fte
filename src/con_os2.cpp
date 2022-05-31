@@ -839,7 +839,7 @@ static int CreatePipeChild(PID &pid, HPIPE &hfPipe, char *Command) {
     HFILE hfStdOut = 1, hfStdErr = 2;
     int rc;
 
-    sprintf(szPipe, "\\PIPE\\FTE%d\\CHILD%d", getpid(), PCount);
+    snprintf(szPipe, sizeof (szPipe), "\\PIPE\\FTE%d\\CHILD%d", getpid(), PCount);
     PCount++;
 
     rc = DosCreateNPipe(szPipe, &hfPipe,

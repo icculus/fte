@@ -74,7 +74,7 @@ void ExASCII::HandleEvent(TEvent &Event) {
                 if (X < 0) X = 0;
                 if (Y < 0) Y = 0;
                 frames->ConSetCursorPos(X + XPos + 1, Y + YPos + 1);
-                sprintf(s, "0%03o %03d 0x%02X",
+                snprintf(s, sizeof (s), "0%03o %03d 0x%02X",
                         X + Y * 32, X + Y * 32, X + Y * 32);
                 MoveStr(B, 0, 13, s, hcAsciiStatus, 13);
                 frames->ConPutBox(XPos + 2, YPos + 9, 13, 1, B);

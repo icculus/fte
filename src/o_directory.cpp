@@ -62,17 +62,18 @@ void EDirectory::DrawLine(PCell B, int Line, int Col, ChColor color, int Width) 
         }
 
         if (Size < 0)
-            sprintf(SizeStr, "%8s", "VERY BIG");
+            snprintf(SizeStr, sizeof (SizeStr), "%8s", "VERY BIG");
         else if (Size > (1024 * 1024 * 1024))
-            sprintf(SizeStr, "%7luG", (unsigned long) (((Size / 1024) / 1024) / 1024));
+            snprintf(SizeStr, sizeof (SizeStr), "%7luG", (unsigned long) (((Size / 1024) / 1024) / 1024));
         else if (Size > 99999999)
-            sprintf(SizeStr, "%7luM", (unsigned long) ((Size / 1024) / 1024));
+            snprintf(SizeStr, sizeof (SizeStr), "%7luM", (unsigned long) ((Size / 1024) / 1024));
         else
-            sprintf(SizeStr, "%8lu", (unsigned long) Size);
+            snprintf(SizeStr, sizeof (SizeStr), "%8lu", (unsigned long) Size);
 
-        sprintf(s, " %04d/%02d/%02d %02d:%02d:%02d %s ",
+        snprintf(s, sizeof (s), " %04d/%02d/%02d %02d:%02d:%02d %s ",
                 Year, Mon, Day, Hour, Min, Sec, SizeStr);
 
+        // !!! FIXME: may overflow!
         strcat(s, Files[Line]->Name());
         s[strlen(s) + 1] = '\0';
         s[strlen(s)] = (Files[Line]->Type() == fiDIRECTORY)? SLASH : ' ';
@@ -146,7 +147,7 @@ void EDirectory::RescanList() {
     {
         char CTitle[256];
 
-        sprintf(CTitle, "%d files%c%d dirs%c%d bytes%c%-200.200s",
+        snprintf(CTitle, sizeof (CTitle), "%d files%c%d dirs%c%d bytes%c%-200.200s",
                 FCount, ConGetDrawChar(DCH_V),
                 DirCount, ConGetDrawChar(DCH_V),
                 SizeCount, ConGetDrawChar(DCH_V),
@@ -426,12 +427,12 @@ void EDirectory::GetInfo(char *AInfo, int MaxLen) {
     strncat(winTitle, Path, sizeof(winTitle) - 1 - strlen(winTitle));
     winTitle[sizeof(winTitle) - 1] = 0;
 
-    sprintf(AInfo,
+    snprintf(AInfo, MaxLen,
             "%2d %04d/%03d %-150s",
             ModelNo,
             Row + 1, FCount,
             winTitle);
-/*    sprintf(AInfo,
+/*    snprintf(AInfo, MaxLen,
             "%2d %04d/%03d %-150s",
             ModelNo,
             Row + 1, FCount,

@@ -650,7 +650,7 @@ int EBuffer::MoveToLine(ExState &State) {
     if (State.GetIntParam(View, &No) == 0) {
         char Num[10];
 
-        sprintf(Num, "%d", VToR(CP.Row) + 1);
+        snprintf(Num, sizeof (Num), "%d", VToR(CP.Row) + 1);
         if (View->MView->Win->GetStr("Goto Line", sizeof(Num), Num, HIST_POSITION) == 0)
             return 0;
         No = atol(Num);
@@ -664,7 +664,7 @@ int EBuffer::MoveToColumn(ExState &State) {
     if (State.GetIntParam(View, &No) == 0) {
         char Num[10];
 
-        sprintf(Num, "%d", CP.Col + 1);
+        snprintf(Num, sizeof (Num), "%d", CP.Col + 1);
         if (View->MView->Win->GetStr("Goto Column", 8, Num, HIST_POSITION) == 0) return 0;
         No = atol(Num);
     }
@@ -1130,7 +1130,7 @@ int EBuffer::ChangeTabSize(ExState &State) {
     if (State.GetIntParam(View, &No) == 0) {
         char Num[10];
 
-        sprintf(Num, "%d", BFI(this, BFI_TabSize));
+        snprintf(Num, sizeof (Num), "%d", BFI(this, BFI_TabSize));
         if (View->MView->Win->GetStr("TabSize", sizeof(Num), Num, HIST_SETUP) == 0) return 0;
         No = atol(Num);
     }
@@ -1154,7 +1154,7 @@ int EBuffer::ChangeRightMargin(ExState &State) {
     int No;
 
     if (State.GetIntParam(View, &No) == 0) {
-        sprintf(Num, "%d", BFI(this, BFI_RightMargin) + 1);
+        snprintf(Num, sizeof (Num), "%d", BFI(this, BFI_RightMargin) + 1);
         if (View->MView->Win->GetStr("RightMargin", sizeof(Num), Num, HIST_SETUP) == 0) return 0;
         No = atol(Num) - 1;
     }
@@ -1169,7 +1169,7 @@ int EBuffer::ChangeLeftMargin(ExState &State) {
     int No;
 
     if (State.GetIntParam(View, &No) == 0) {
-        sprintf(Num, "%d", BFI(this, BFI_LeftMargin) + 1);
+        snprintf(Num, sizeof (Num), "%d", BFI(this, BFI_LeftMargin) + 1);
         if (View->MView->Win->GetStr("LeftMargin", sizeof(Num), Num, HIST_SETUP) == 0) return 0;
         No = atol(Num) - 1;
     }
@@ -1278,7 +1278,7 @@ void EBuffer::GetInfo(char *AInfo, int MaxLen) {
     strncat(winTitle, FileName, sizeof(winTitle) - 1 - strlen(winTitle));
     winTitle[sizeof(winTitle) - 1] = 0;
 
-    sprintf(AInfo,
+    snprintf(AInfo, MaxLen,
             "%2d %04d:%03d%c%-150s ",
             ModelNo,
             1 + CP.Row, 1 + CP.Col,
@@ -1390,7 +1390,7 @@ int EBuffer::InsertDate(ExState &State) {
         //** 012345678901234567890123
         //** Wed Jan 02 02:23:54 1991
         p = ctime(&t);
-        sprintf(buf, "%.10s %.4s", p, p + 20);
+        snprintf(buf, sizeof (buf), "%.10s %.4s", p, p + 20);
     }
     //puts(buf);
 

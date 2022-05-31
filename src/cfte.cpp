@@ -65,7 +65,7 @@ void Fail(CurPos &cp, const char *s, ...) {
     char msgbuf[1024];
 
     va_start(ap, s);
-    vsprintf(msgbuf, s, ap);
+    vsnprintf(msgbuf, sizeof (msgbuf), s, ap);
     va_end(ap);
 
     fprintf(stderr, "%s:%d: Error: %s\n", cp.name, cp.line, msgbuf);
@@ -157,7 +157,7 @@ int main(int argc, char **argv) {
 
     JustDirectory(Target, XTarget);
     Slash(XTarget, 1);
-    sprintf(XTarget + strlen(XTarget), "cfte%ld.tmp", (long)getpid());
+    snprintf(XTarget + strlen(XTarget), sizeof (XTarget) - strlen(XTarget), "cfte%ld.tmp", (long)getpid());
     output = fopen(XTarget, "wb");
     if (output == 0) {
         fprintf(stderr, "Cannot create '%s', errno=%d!\n", XTarget, errno);
@@ -189,7 +189,7 @@ int main(int argc, char **argv) {
     fprintf(stderr, "Compiling to '%s'\n", Target);
     /*{
         char PrevDir[MAXPATH];
-        sprintf(PrevDir, "%s/..", Target);
+        snprintf(PrevDir, sizeof (PrevDir), "%s/..", Target);
         ExpandPath(PrevDir, StartDir);
         Slash(StartDir, 1);
     }*/
@@ -1711,23 +1711,23 @@ int LoadFile(const char *WhereName, const char *CfgName, int Level) {
 #ifdef UNIX
         // 1. User's .fte directory.
         char tmp[MAXPATH];
-        sprintf(tmp, "~/.fte/%s", CfgName);
+        snprintf(tmp, sizeof (tmp), "~/.fte/%s", CfgName);
         ExpandPath(tmp, Cfg);
         //fprintf(stderr, "Looking for %s\n", Cfg);
         if (!FileExists(Cfg))
         {
             // Okay, now try "local config".
-            sprintf(tmp, "%slocalconfig/%s", StartDir, CfgName);
+            snprintf(tmp, sizeof (tmp), "%slocalconfig/%s", StartDir, CfgName);
             ExpandPath(tmp, Cfg);
             //fprintf(stderr, "Looking for %s\n", Cfg);
             if (!FileExists(Cfg))
             {
-                sprintf(tmp, "%sconfig/%s", StartDir, CfgName);
+                snprintf(tmp, sizeof (tmp), "%sconfig/%s", StartDir, CfgName);
                 ExpandPath(tmp, Cfg);
                 //fprintf(stderr, "Looking for %s\n", Cfg);
                 if (!FileExists(Cfg))
                 {
-                    sprintf(tmp, "./%s", CfgName);
+                    snprintf(tmp, sizeof (tmp), "./%s", CfgName);
                     ExpandPath(tmp, Cfg);
                     //fprintf(stderr, "Looking for %s\n", Cfg);
                     if (!FileExists(Cfg))

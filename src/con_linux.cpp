@@ -177,19 +177,19 @@ int ConInit(int XSize, int YSize) {
         die("failed to get kbdmode");
 #if 0
     if (mode != K_XLATE) { // X, etc...
-        sprintf(ttyname, "/dev/console");
+        strcpy(ttyname, "/dev/console");
         if ((VtFd = open(ttyname, O_RDWR)) == -1)
             die("failed to open /dev/console");
         if (ioctl(VtFd, VT_OPENQRY, &free_tty) < 0 || free_tty == -1)
             die("could not find a free tty\n");
         close(VtFd);
         VtNum = free_tty;
-        sprintf(ttyname, "/dev/tty%d", VtNum);
+        snprintf(ttyname, sizeof (ttyname), "/dev/tty%d", VtNum);
         if ((VtFd = open(ttyname, O_RDWR)) == -1)
             die("could not open tty");
     }
 #endif
-    sprintf(vcsname, "/dev/vcsa%d", VtNum);
+    snprintf(vcsname, sizeof (vcsname), "/dev/vcsa%d", VtNum);
 
      /*
       * This is the _only_ place that we use our extra privs if any,

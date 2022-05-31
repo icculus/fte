@@ -552,7 +552,7 @@ static int DoChoice(HWND hwndFrame, ChoiceInfo *choice) {
     char msgbox[100];
     int SPC = 4;
     
-    sprintf(msgbox, "MsgBox: %s", choice->Title);
+    snprintf(msgbox, sizeof (msgbox), "MsgBox: %s", choice->Title);
     
     cxBorder = WinQuerySysValue(HWND_DESKTOP, SV_CXDLGFRAME);
     cyBorder = WinQuerySysValue(HWND_DESKTOP, SV_CYDLGFRAME);
@@ -594,7 +594,7 @@ static int DoChoice(HWND hwndFrame, ChoiceInfo *choice) {
     }
     
     fmt = va_arg(choice->ap, char *);
-    vsprintf(msg, fmt, choice->ap);
+    vsnprintf(msg, sizeof (msg), fmt, choice->ap);
     strncpy((PCHAR)Prompt, msg, sizeof(Prompt));
     Prompt[sizeof(Prompt) - 1] = 0;
     
@@ -3550,7 +3550,7 @@ static int CreatePipeChild(ULONG *sid, PID *pid, HPIPE &hfPipe, char *Command) {
     HFILE hfStdOut = (HFILE)1, hfStdErr = (HFILE)2;
     int rc;
     
-    sprintf(szPipe, "\\PIPE\\FTE%d\\CHILD%d", getpid(), PCount);
+    snprintf(szPipe, sizeof (szPipe), "\\PIPE\\FTE%d\\CHILD%d", getpid(), PCount);
     PCount++;
     
     rc = DosCreateNPipe(szPipe, &hfPipe,
@@ -3870,7 +3870,7 @@ void DieError(int rc, const char *msg, ...) {
     char str[1024];
     
     va_start(ap, msg);
-    vsprintf(str, msg, ap);
+    vsnprintf(str, sizeof (str), msg, ap);
     va_end(ap);
     if (hab == 0)
         hab = WinInitialize(0);

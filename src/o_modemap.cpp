@@ -34,22 +34,22 @@ void EventMapView::DumpKey(const char *aPrefix, EKey *Key) {
         strcat(KeyName, "_");
     }
     GetKeyName(KeyName + strlen(KeyName), Key->fKey);
-    sprintf(Entry, "%13s   ", KeyName);
+    snprintf(Entry, sizeof (Entry), "%13s   ", KeyName);
     id = Key->Cmd;
     for (int i = 0; i < Macros[id].Count; i++) {
         p = Entry + strlen(Entry);
         if (Macros[id].cmds[i].type == CT_COMMAND) {
             if (Macros[id].cmds[i].repeat > 1)
-                sprintf(p, "%d:%s ", Macros[id].cmds[i].repeat, GetCommandName(Macros[id].cmds[i].u.num));
+                snprintf(p, sizeof (Entry) - strlen(Entry), "%d:%s ", Macros[id].cmds[i].repeat, GetCommandName(Macros[id].cmds[i].u.num));
             else
-                sprintf(p, "%s ", GetCommandName(Macros[id].cmds[i].u.num));
+                snprintf(p, sizeof (Entry) - strlen(Entry), "%s ", GetCommandName(Macros[id].cmds[i].u.num));
         } else if (Macros[id].cmds[i].type == CT_NUMBER) {
-            sprintf(p, "%ld ", Macros[id].cmds[i].u.num);
+            snprintf(p, sizeof (Entry) - strlen(Entry), "%ld ", Macros[id].cmds[i].u.num);
         } else if (Macros[id].cmds[i].type == CT_STRING) {
-            sprintf(p, "'%s' ", Macros[id].cmds[i].u.string);
+            snprintf(p, sizeof (Entry) - strlen(Entry), "'%s' ", Macros[id].cmds[i].u.string);
         }
         if (strlen(Entry) > 1950) {
-            strcat(Entry, "...");
+            strcpy(Entry + 1950, "...");
             break;
         }
     }
@@ -159,7 +159,7 @@ void EventMapView::GetName(char *AName, int MaxLen) {
 }
 
 void EventMapView::GetInfo(char *AInfo, int MaxLen) {
-    sprintf(AInfo, 
+    snprintf(AInfo, MaxLen,
             "%2d %04d/%03d EventMapView (%s)",
             ModelNo,
             Row + 1, Count,
@@ -167,7 +167,7 @@ void EventMapView::GetInfo(char *AInfo, int MaxLen) {
 }
 
 void EventMapView::GetTitle(char *ATitle, int MaxLen, char *ASTitle, int SMaxLen) {
-    sprintf(ATitle, "EventMapView: %s", EMap->Name);
+    snprintf(ATitle, MaxLen, "EventMapView: %s", EMap->Name);
     strncpy(ASTitle, "EventMapView", SMaxLen);
     ASTitle[SMaxLen - 1] = 0;
 }

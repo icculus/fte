@@ -122,7 +122,7 @@ void EModel::Msg(int level, const char *s, ...) {
         return;
     
     va_start(ap, s);
-    vsprintf(msgbuftmp, s, ap);
+    vsnprintf(msgbuftmp, sizeof (msgbuftmp), s, ap);
     va_end(ap);
     
     if (level != S_BUSY)

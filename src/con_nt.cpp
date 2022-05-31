@@ -85,7 +85,7 @@ void dbg(const char* s, ...) /*FOLD00*/
     va_list args;
 
     va_start(args, s);
-    vsprintf(buf, s, args);
+    vsnprintf(buf, sizeof (buf), s, args);
     va_end(args);
     OutputDebugString(buf);
 }
@@ -1035,7 +1035,7 @@ int GPipe::createPipe() /*FOLD00*/
 #else
 
     //** Create the named pipe, and handle the SERVER (edit)'s end...
-    sprintf(pipename, "\\\\.\\pipe\\fte%d\\child%d", getpid(), PCount);
+    snprintf(pipename, sizeof (pipename), "\\\\.\\pipe\\fte%d\\child%d", getpid(), PCount);
     p_pipe_ph = CreateNamedPipe(pipename,
                                 PIPE_ACCESS_INBOUND | FILE_FLAG_OVERLAPPED,
                                 PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,

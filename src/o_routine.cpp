@@ -24,7 +24,7 @@ RoutineView::RoutineView(int createFlags, EModel **ARoot, EBuffer *AB): EList(cr
     {
         char CTitle[256];
     
-        sprintf(CTitle, "Routines %s: %d",
+        snprintf(CTitle, sizeof (CTitle), "Routines %s: %d",
                 Buffer->FileName,
                 Buffer->rlst.Count);
         SetTitle(CTitle);
@@ -114,11 +114,11 @@ void RoutineView::GetName(char *AName, int MaxLen) {
 }
 
 void RoutineView::GetInfo(char *AInfo, int MaxLen) {
-    sprintf(AInfo, "%2d %04d/%03d Routines (%s)", ModelNo, Row + 1, Count, Buffer->FileName);
+    snprintf(AInfo, MaxLen, "%2d %04d/%03d Routines (%s)", ModelNo, Row + 1, Count, Buffer->FileName);
 }
 
 void RoutineView::GetTitle(char *ATitle, int MaxLen, char *ASTitle, int SMaxLen) {
-    sprintf(ATitle, "Routines: %s", Buffer->FileName);
+    snprintf(ATitle, MaxLen, "Routines: %s", Buffer->FileName);
     strncpy(ASTitle, "Routines", SMaxLen);
     ASTitle[SMaxLen - 1] = 0;
 }

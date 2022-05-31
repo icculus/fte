@@ -185,7 +185,7 @@ int DLGPickChoice(GView *v, char *ATitle, int NSel, va_list ap, int Flags) {
     char msg[1024];
     char *fmt;
     fmt = va_arg(ap, char *);
-    vsprintf(msg, fmt, ap);
+    vsnprintf(msg, sizeof (msg), fmt, ap);
     
     cb->setText(msg);
     

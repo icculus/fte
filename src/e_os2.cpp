@@ -29,7 +29,7 @@ int EView::SysShowHelp(ExState &State, const char *word) {
         word = wordAsk;
     }
 
-    sprintf(cmd, "%s %s %s", HelpCommand, file, word);
+    snprintf(cmd, sizeof (cmd), "%s %s %s", HelpCommand, file, word);
 
     if (system(cmd) != 0) {
         Msg(S_ERROR, "Failed to start view.exe!");

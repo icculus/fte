@@ -427,7 +427,7 @@ void EView::Msg(int level, const char *s, ...) {
     va_list ap;
 
     va_start(ap, s);
-    vsprintf(msgbuftmp, s, ap);
+    vsnprintf(msgbuftmp, sizeof (msgbuftmp), s, ap);
     va_end(ap);
 
     if (level != S_BUSY)

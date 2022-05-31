@@ -27,7 +27,7 @@ ExChoice::ExChoice(const char *ATitle, int NSel, va_list ap): ExView() {
         lChoice += CStrLen(SOpt[i]) + 1;
     }
     fmt = va_arg(ap, char *);
-    vsprintf(msg, fmt, ap);
+    vsnprintf(msg, sizeof (msg), fmt, ap);
     strncpy(Prompt, msg, sizeof(Prompt));
     Prompt[sizeof(Prompt) - 1] = 0;
 }

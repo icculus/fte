@@ -383,7 +383,7 @@ int EBuffer::SaveTo(char *AFileName) {
                 strcpy(fold + foldlen, BFS(this, BFS_CommentStart));
                 foldlen += strlen(BFS(this, BFS_CommentStart));
             }
-            foldlen += sprintf(fold + foldlen,
+            foldlen += snprintf(fold + foldlen, sizeof (fold) - foldlen,
                                FF[f].open ? "FOLD%02d" : "fold%02d",
                                FF[f].level);
             if (BFS(this, BFS_CommentEnd) != 0) {
