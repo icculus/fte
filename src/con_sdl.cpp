@@ -1,12 +1,16 @@
 /*    con_sdl.cpp
  *
- *    Copyright (c) 2015, Ryan C. Gordon
+ *    Copyright (c) 2025, Ryan C. Gordon
  *
  *    You may distribute under the terms of either the GNU General Public
  *    License or the Artistic License, as specified in the README file.
  */
 
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
+
 #include <string.h>
+#include <stdlib.h>
 #include <assert.h>
 #include <stdarg.h>
 #include <unistd.h>
@@ -15,13 +19,17 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#include "SDL.h"
+#define NEED_LOG_H
+#include "log.h"
 
 #include "console.h"
 #include "gui.h"
 
 #include "con_i18n.h"
 #include "s_files.h"
+
+// this needs to be compiled under an SDL_main.h include, so it picks up WinMain, etc.
+#include "main.cpp"
 
 #ifdef CAST_FD_SET_INT
 #define FD_SET_CAST() (int *)
@@ -36,6 +44,7 @@
 //#define PIPE_BUFLEN 4096
 
 #include "sdl_font.h"
+
 
 static inline void dbg(const char *fmt, ...)
 {
@@ -72,7 +81,6 @@ static GPipe Pipes[MAX_PIPES] = {
     { 0 },
 };
 
-static int initX = 0, initY = 0;
 static unsigned int ScreenCols = 80;
 static unsigned int ScreenRows = 40;
 static unsigned int CursorX = 0;
@@ -88,7 +96,8 @@ static char winSTitle[256] = "FTE";
 static SDL_Window *win = NULL;
 static bool bWindowDirty = false;
 static bool bCursorShown = true;
-static Uint32 dpimult = 1;
+static float dpimult = 1.0f;
+static bool bSawUpdatableEvent = false;
 
 #define USE_SDL2_RENDER_API 1
 
@@ -182,7 +191,7 @@ static int AllocBuffer() {
     unsigned char *p;
     unsigned int i;
 
-    ScreenBuffer = (unsigned char *)malloc(2 * ScreenCols * ScreenRows);
+    ScreenBuffer = (unsigned char *)SDL_malloc(2 * ScreenCols * ScreenRows);
     if (ScreenBuffer == NULL) return -1;
     for (i = 0, p = ScreenBuffer; i < ScreenCols * ScreenRows; i++) {
         *p++ = 32;
@@ -196,20 +205,28 @@ static SDL_Surface *LoadFontToSurface()
     FIXME("Load external TTF files, build a bitmap on the fly.");
 
     // use the default, built-in bitmap.
-    SDL_RWops *rwops = SDL_RWFromConstMem(default_sdl_font, sizeof (default_sdl_font));
+    SDL_IOStream *rwops = SDL_IOFromConstMem(default_sdl_font, sizeof (default_sdl_font));
     if (!rwops)
         return NULL;
 
-    SDL_Surface *surface = SDL_LoadBMP_RW(rwops, 1);
+    SDL_Surface *surface = SDL_LoadBMP_IO(rwops, 1);
     return surface;
 }
 
 static int SetupSDLWindow(int argc, char **argv) {
-    if (SDL_Init(SDL_INIT_VIDEO) == -1) {
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_NAME_STRING, "FTE");
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_VERSION_STRING, "0.49.13");
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_IDENTIFIER_STRING, "org.icculus.fte");
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_CREATOR_STRING, "Ryan C. Gordon");
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING, "Copyright (c) 1994-2025 Marko Macek, Ryan C. Gordon, and others");
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_URL_STRING, "https://github.com/icculus/fte");
+    SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "application");
+
+    if (!SDL_Init(SDL_INIT_VIDEO)) {
         char buf[512];
         SDL_snprintf(buf, sizeof (buf), "Could not initialize SDL! (%s)", SDL_GetError());
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "FTE-SDL Fatal", buf, NULL);
-        DieError(1, "XFTE Fatal: %s", buf);
+        DieError(1, "SDLFTE Fatal: %s", buf);
     }
 
     SDL_EnableScreenSaver();  // This isn't a game, just treat it like any other app.
@@ -218,49 +235,31 @@ static int SetupSDLWindow(int argc, char **argv) {
     if (!surface) {
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "FTE-SDL Fatal", "Could not load font!", NULL);
         SDL_Quit();
-        DieError(1, "XFTE Fatal: could not load font!");
+        DieError(1, "SDLFTE Fatal: could not load font!");
     }
 
     FontCX = surface->w / 256;
     FontCY = surface->h;
 
-#if 1  // FIXME
-    FIXME("support -geometry command line");
-    initX = initY = SDL_WINDOWPOS_UNDEFINED;
-#else
-    // this is correct behavior
-    if (initX < 0)
-        initX = DisplayWidth(display, DefaultScreen(display)) + initX;
-    if (initY < 0)
-        initY = DisplayHeight(display, DefaultScreen(display)) + initY;
-#endif
     const int winw = ScreenCols * FontCX;
     const int winh = ScreenRows * FontCY;
 
-    Uint32 winflags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN;
+    Uint32 winflags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY;
     #if !USE_SDL2_RENDER_API
     winflags |= SDL_WINDOW_OPENGL;
     #endif
 
-    dpimult = 1;
-    float hdpi = 96.0f;
-    if (SDL_GetDisplayDPI(0, NULL, &hdpi, NULL) == 0) {
-        if (hdpi > 180.0) {   // !!! FIXME: is that okay?
-            //SDL_Log("HIGHDPI");
-            dpimult = 2;
-        }
-    }
-
-    win = SDL_CreateWindow(winTitle, initX, initY, winw * dpimult, winh * dpimult, winflags);
+    dpimult = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
+    win = SDL_CreateWindow(winTitle, (int) (winw * dpimult), (int) (winh * dpimult), winflags);
 
     if (!win)
     {
         char buf[512];
         SDL_snprintf(buf, sizeof (buf), "Could not create window! (%s)", SDL_GetError());
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "FTE-SDL Fatal", buf, NULL);
-        SDL_FreeSurface(surface);
+        SDL_DestroySurface(surface);
         SDL_Quit();
-        DieError(1, "XFTE Fatal: %s", buf);
+        DieError(1, "SDLFTE Fatal: %s", buf);
     }
 
     #ifndef __APPLE__  // mac os x gets its icon elsewhere.
@@ -276,29 +275,29 @@ static int SetupSDLWindow(int argc, char **argv) {
             delete[] path;
             if (icon)
             {
-                SDL_SetColorKey(icon, 1, SDL_MapRGB(icon->format, 255, 255, 255));
+                SDL_SetSurfaceColorKey(icon, true, SDL_MapRGB(SDL_GetPixelFormatDetails(icon->format), SDL_GetSurfacePalette(icon), 255, 255, 255));
                 SDL_SetWindowIcon(win, icon);
-                SDL_FreeSurface(icon);
+                SDL_DestroySurface(icon);
             }
         }
     }
     #endif
 
-    SDL_SetWindowMinimumSize(win, MIN_SCRWIDTH * FontCX * dpimult, MIN_SCRHEIGHT * FontCY * dpimult);
+    SDL_SetWindowMinimumSize(win, (int) (MIN_SCRWIDTH * FontCX * dpimult), (int) (MIN_SCRHEIGHT * FontCY * dpimult));
 
-    SDL_SetColorKey(surface, 1, SDL_MapRGB(surface->format, 0, 0, 0));
+    SDL_SetSurfaceColorKey(surface, true, SDL_MapRGB(SDL_GetPixelFormatDetails(surface->format), SDL_GetSurfacePalette(surface), 0, 0, 0));
 
 #if USE_SDL2_RENDER_API
-    renderer = SDL_CreateRenderer(win, -1, 0);
+    renderer = SDL_CreateRenderer(win, NULL);
     if (!renderer)
     {
         char buf[512];
         SDL_snprintf(buf, sizeof (buf), "Could not create renderer! (%s)", SDL_GetError());
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "FTE-SDL Fatal", buf, win);
         SDL_DestroyWindow(win);
-        SDL_FreeSurface(surface);
+        SDL_DestroySurface(surface);
         SDL_Quit();
-        DieError(1, "XFTE Fatal: %s", buf);
+        DieError(1, "SDLFTE Fatal: %s", buf);
     }
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xFF);
@@ -307,10 +306,10 @@ static int SetupSDLWindow(int argc, char **argv) {
     SDL_RenderClear(renderer);
     SDL_RenderPresent(renderer);
 
-    SDL_RenderSetLogicalSize(renderer, winw, winh);
+    SDL_SetRenderLogicalPresentation(renderer, winw, winh, SDL_LOGICAL_PRESENTATION_LETTERBOX);
 
     font = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_FreeSurface(surface);
+    SDL_DestroySurface(surface);
     if (!font)
     {
         char buf[512];
@@ -319,9 +318,10 @@ static int SetupSDLWindow(int argc, char **argv) {
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(win);
         SDL_Quit();
-        DieError(1, "XFTE Fatal: %s", buf);
+        DieError(1, "SDLFTE Fatal: %s", buf);
     }
 
+    SDL_SetTextureScaleMode(font, SDL_SCALEMODE_NEAREST);
     SDL_SetTextureBlendMode(font, SDL_BLENDMODE_BLEND);
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
 #else
@@ -359,7 +359,7 @@ static int SetupSDLWindow(int argc, char **argv) {
     glViewport(0, drawableh % FontCY, drawablew - (drawablew % FontCX), drawableh - (drawableh % FontCY));
 
     SDL_Surface *cvt = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA8888, 0);
-    SDL_FreeSurface(surface);
+    SDL_DestroySurface(surface);
     surface = cvt;
 
     glGenTextures(1, &font);
@@ -373,7 +373,7 @@ static int SetupSDLWindow(int argc, char **argv) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, surface->w, surface->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, surface->pixels);
-    SDL_FreeSurface(surface);
+    SDL_DestroySurface(surface);
 
     GLint ok = 0;
 
@@ -406,7 +406,7 @@ static int SetupSDLWindow(int argc, char **argv) {
         glGetShaderInfoLog(vshader, sizeof (error_buffer), &len, error_buffer);
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Failed to compile vertex shader", error_buffer, win);
         SDL_Quit();
-        DieError(1, "XFTE Fatal: bad vertex shader: %s", error_buffer);
+        DieError(1, "SDLFTE Fatal: bad vertex shader: %s", error_buffer);
     }
 
     const char *fshader_src =
@@ -431,7 +431,7 @@ static int SetupSDLWindow(int argc, char **argv) {
         glGetShaderInfoLog(fshader, sizeof (error_buffer), &len, error_buffer);
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Failed to compile fragment shader", error_buffer, win);
         SDL_Quit();
-        DieError(1, "XFTE Fatal: bad fragment shader: %s", error_buffer);
+        DieError(1, "SDLFTE Fatal: bad fragment shader: %s", error_buffer);
     }
 
     program = glCreateProgram();
@@ -447,7 +447,7 @@ static int SetupSDLWindow(int argc, char **argv) {
         glGetProgramInfoLog(program, sizeof (error_buffer), &len, error_buffer);
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Failed to link final shader program", error_buffer, win);
         SDL_Quit();
-        DieError(1, "XFTE Fatal: can't link shaders: %s", error_buffer);
+        DieError(1, "SDLFTE Fatal: can't link shaders: %s", error_buffer);
     }
 
     glDeleteShader(vshader);
@@ -526,7 +526,7 @@ int ConDone(void) {
     glDeleteProgram(program);
     program = 0;
     SDL_GL_MakeCurrent(win, NULL);
-    SDL_GL_DeleteContext(glctx);
+    SDL_GL_DestroyContext(glctx);
     glctx = NULL;
 #endif
 
@@ -556,16 +556,8 @@ int ConSetTitle(char *Title, char *STitle) {
     if (buf[0] == '\0') // if there is no filename, try the directory name.
         JustLastDirectory(Title, buf);
 
-    strncpy(winTitle, "FTE - ", sizeof(winTitle) - 1);
-    if (buf[0] != 0) // if there is a file/dir name, stick it in here.
-    {
-        strncat(winTitle, buf, sizeof(winTitle) - 1 - strlen(winTitle));
-        strncat(winTitle, " - ", sizeof(winTitle) - 1 - strlen(winTitle));
-    }
-    strncat(winTitle, Title, sizeof(winTitle) - 1 - strlen(winTitle));
-    winTitle[sizeof(winTitle) - 1] = 0;
-    strncpy(winSTitle, STitle, sizeof(winSTitle) - 1);
-    winSTitle[sizeof(winSTitle) - 1] = 0;
+    SDL_snprintf(winTitle, sizeof (winTitle), "FTE - %s%s%s", buf[0] ? buf : "", buf[0] ? " - " : "", Title);
+    SDL_strlcpy(winSTitle, STitle, sizeof (winSTitle));
     SDL_SetWindowTitle(win, winTitle);
 
     return 0;
@@ -579,7 +571,7 @@ int ConGetTitle(char *Title, int MaxLen, char *STitle, int SMaxLen) {
     return 0;
 }
 
-#define InRange(x,a,y) (((x) <= (a)) && ((a) < (y)))
+//#define InRange(x,a,y) (((x) <= (a)) && ((a) < (y)))
 #define CursorXYPos(x,y) (ScreenBuffer + ((x) + ((y) * ScreenCols)) * 2)
 
 static void DrawString(const unsigned char *temp, const unsigned int l,
@@ -751,7 +743,7 @@ int ConSetSize(int X, int Y) {
     int i;
     int MX, MY;
 
-    p = NewBuffer = (unsigned char *) malloc(((X * Y) + 2) * 2);
+    p = NewBuffer = (unsigned char *) SDL_malloc(((X * Y) + 2) * 2);
     if (NewBuffer == NULL) return -1;
     for (i = 0; i < ((X * Y) + 2); i++) {
         *p++ = ' ';
@@ -768,7 +760,7 @@ int ConSetSize(int X, int Y) {
         memcpy(p, CursorXYPos(0, i), MX * 2);
         p += X * 2;
     }
-    free(ScreenBuffer);
+    SDL_free(ScreenBuffer);
     ScreenBuffer = NewBuffer;
     ScreenCols = X;
     ScreenRows = Y;
@@ -785,7 +777,7 @@ int ConSetSize(int X, int Y) {
     }
     current_vbo = 0;
     int drawablew, drawableh;
-    SDL_GL_GetDrawableSize(win, &drawablew, &drawableh);
+    SDL_GetWindowSizeInPixels(win, &drawablew, &drawableh);
     glViewport(0, drawableh % FontCY, drawablew - (drawablew % FontCX), drawableh - (drawableh % FontCY));
 #endif
 
@@ -799,10 +791,12 @@ int ConQuerySize(int *X, int *Y) {
 }
 
 int ConSetCursorPos(int X, int Y) {
-    DrawCursor(0);
-    CursorX = X;
-    CursorY = Y;
-    DrawCursor(1);
+    if ( (((unsigned int) X) != CursorX) || (((unsigned int) Y) != CursorY) ) {
+        DrawCursor(0);
+        CursorX = (unsigned int) X;
+        CursorY = (unsigned int) Y;
+        DrawCursor(1);
+    }
     return 0;
 }
 
@@ -847,7 +841,7 @@ bool bCursorShowing = true;
 int ConShowMouse(void) {
     if (!bCursorShowing)
     {
-        SDL_ShowCursor(1);
+        SDL_ShowCursor();
         bCursorShowing = true;
     }
     return 0;
@@ -856,7 +850,7 @@ int ConShowMouse(void) {
 int ConHideMouse(void) {
     if (bCursorShowing)
     {
-        SDL_ShowCursor(0);
+        SDL_HideCursor();
         bCursorShowing = false;
     }
     return 0;
@@ -917,7 +911,8 @@ static void UpdateWindow(int xx, int yy, int ww, int hh) {
 
 static void ResizeWindow(int ww, int hh) {
 #if USE_SDL2_RENDER_API
-    SDL_RenderSetLogicalSize(renderer, ww, hh);
+    SDL_SetRenderLogicalPresentation(renderer, ww, hh,
+                                     SDL_LOGICAL_PRESENTATION_LETTERBOX);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
     SDL_RenderPresent(renderer);
@@ -1039,46 +1034,62 @@ static struct {
     { 0,                 0 }
 };
 
-static int skip_next_textinput;
+static void ProcessSDLEvent(SDL_Event &sdlevent, TEvent *Event) {
+    int w, h;
 
-static void ProcessSDLEvent(const SDL_Event &sdlevent, TEvent *Event) {
+    SDL_ConvertEventToRenderCoordinates(renderer, &sdlevent);
+
     switch (sdlevent.type) {
-        case SDL_WINDOWEVENT:
-            switch (sdlevent.window.event) {
-                case SDL_WINDOWEVENT_EXPOSED: {
-                    int w, h;
-                    SDL_GetWindowSize(win, &w, &h);
-                    UpdateWindow(0, 0, w / dpimult, h / dpimult);
-                    break;
-                }
-                case SDL_WINDOWEVENT_SIZE_CHANGED: {
-                    ResizeWindow(sdlevent.window.data1 / dpimult, sdlevent.window.data2 / dpimult);
-                    Event->What = evCommand;
-                    Event->Msg.Command = cmResize;
-                    break;
-                }
-                case SDL_WINDOWEVENT_CLOSE: {
-                    Event->What = evCommand;
-                    Event->Msg.Command = cmClose;
-                    break;
-                }
-            }
+        case SDL_EVENT_WINDOW_EXPOSED:
+            bWindowDirty = true;
+            SDL_GetWindowSize(win, &w, &h);
+            UpdateWindow(0, 0, (int) (w / dpimult), (int) (h / dpimult));
             break;
 
-        case SDL_QUIT:
+        case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+            bWindowDirty = true;
+            bSawUpdatableEvent = true;
+            ResizeWindow((int) (sdlevent.window.data1 / dpimult), (int) (sdlevent.window.data2 / dpimult));
+            Event->What = evCommand;
+            Event->Msg.Command = cmResize;
+            break;
+
+        case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED: {
+            const float newdpimult = SDL_GetWindowDisplayScale(win);
+            if (newdpimult != dpimult) {
+                bWindowDirty = true;
+                bSawUpdatableEvent = true;
+                SDL_GetWindowSizeInPixels(win, &w, &h);
+                w = (int) ((((float) w) / dpimult) * newdpimult);
+                h = (int) ((((float) h) / dpimult) * newdpimult);
+                dpimult = newdpimult;
+                SDL_SetWindowSize(win, w, h);
+                ResizeWindow((int) (w / dpimult), (int) (h / dpimult));
+            }
+            break;
+        }
+
+        case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+            bSawUpdatableEvent = true;
             Event->What = evCommand;
             Event->Msg.Command = cmClose;
             break;
 
-        case SDL_MOUSEMOTION: {
-            int mousex = sdlevent.motion.x;
-            int mousey = sdlevent.motion.y;
+        case SDL_EVENT_QUIT:
+            bSawUpdatableEvent = true;
+            Event->What = evCommand;
+            Event->Msg.Command = cmClose;
+            break;
+
+        case SDL_EVENT_MOUSE_MOTION: {
+            float mousex = sdlevent.motion.x;
+            float mousey = sdlevent.motion.y;
             #if !USE_SDL2_RENDER_API  // logical scaling handles this for the render api.
             mousex /= dpimult;
             mousey /= dpimult;
             #endif
-            Event->Mouse.X = (mousex / FontCX);
-            Event->Mouse.Y = (mousey / FontCY);
+            Event->Mouse.X = (int) (mousex / FontCX);
+            Event->Mouse.Y = (int) (mousey / FontCY);
             if (LastMouseX != Event->Mouse.X || LastMouseY != Event->Mouse.Y) {
                 Event->What = evMouseMove;
                 Event->Mouse.Count = 1;
@@ -1088,21 +1099,25 @@ static void ProcessSDLEvent(const SDL_Event &sdlevent, TEvent *Event) {
                 if (sdlevent.motion.state & SDL_BUTTON_MMASK) Event->Mouse.Buttons |= 4;
                 LastMouseX = (int) Event->Mouse.X;
                 LastMouseY = (int) Event->Mouse.Y;
+                if (Event->Mouse.Buttons) {
+                    bSawUpdatableEvent = true;
+                }
             }
             break;
         }
 
-        case SDL_MOUSEBUTTONUP:
-        case SDL_MOUSEBUTTONDOWN: {
-            int mousex = sdlevent.button.x;
-            int mousey = sdlevent.button.y;
+        case SDL_EVENT_MOUSE_BUTTON_UP:
+        case SDL_EVENT_MOUSE_BUTTON_DOWN: {
+            bSawUpdatableEvent = true;
+            float mousex = sdlevent.button.x;
+            float mousey = sdlevent.button.y;
             #if !USE_SDL2_RENDER_API  // logical scaling handles this for the render api.
             mousex /= dpimult;
             mousey /= dpimult;
             #endif
-            Event->Mouse.X = mousex / FontCX;
-            Event->Mouse.Y = mousey / FontCY;
-            Event->What = (sdlevent.button.state == SDL_PRESSED) ? evMouseDown : evMouseUp;
+            Event->Mouse.X = (int) (mousex / FontCX);
+            Event->Mouse.Y = (int) (mousey / FontCY);
+            Event->What = (sdlevent.button.down) ? evMouseDown : evMouseUp;
             Event->Mouse.Count = sdlevent.button.clicks;
             Event->Mouse.Buttons = 0;
             if (sdlevent.button.button == SDL_BUTTON_LEFT) Event->Mouse.Buttons |= 1;
@@ -1111,8 +1126,9 @@ static void ProcessSDLEvent(const SDL_Event &sdlevent, TEvent *Event) {
             break;
         }
 
-        case SDL_MOUSEWHEEL:
+        case SDL_EVENT_MOUSE_WHEEL:
             if (sdlevent.wheel.x || sdlevent.wheel.y) {
+                bSawUpdatableEvent = true;
                 Event->What = evCommand;
                 Event->Mouse.X = LastMouseX;
                 Event->Mouse.Y = LastMouseY;
@@ -1131,51 +1147,22 @@ static void ProcessSDLEvent(const SDL_Event &sdlevent, TEvent *Event) {
             }
             break;
 
-        case SDL_KEYDOWN:
+        case SDL_EVENT_KEY_DOWN:
         //case SDL_KEYUP:  // con_x11.cpp has this commented out too. --ryan.
         {
-            if (sdlevent.key.state == SDL_PRESSED) {
-                #if 0
-                const SDL_bool numlock = (sdlevent.key.keysym.mod & KMOD_NUM) ? SDL_TRUE : SDL_FALSE;
-                if (numlock && ((sdlevent.key.keysym.sym == SDLK_KP_0) || ((sdlevent.key.keysym.sym >= SDLK_KP_1) && (sdlevent.key.keysym.sym <= SDLK_KP_9)))) {
-                    Event->What = evNone;
-                    return;  // let SDL_TEXTINPUT handle it.
-                }
-                #endif
-
-                // HACK otherwise this gets two ALT+- in a row, so you can't
-                //  jump to a matching bracket.  :/
-                if (sdlevent.key.keysym.sym == '-') {
-                    Event->What = evNone;
-                    return;  // let SDL_TEXTINPUT handle it.
-                }
-
-                // HACK otherwise this gets two ALT-q in a row, closing two files at a time!
-                if ((sdlevent.key.keysym.sym == 'q') && (sdlevent.key.keysym.mod & KMOD_ALT)) {
-                    Event->What = evNone;
-                    return;  // let SDL_TEXTINPUT handle it.
-                }
-
-                if (sdlevent.key.keysym.sym == SDLK_KP_0) {   // KP_0 is > KP_9.  :/
-                    skip_next_textinput = '0';
-                } else if (sdlevent.key.keysym.sym == SDLK_KP_PERIOD) {
-                    skip_next_textinput = '.';
-                } else if ((sdlevent.key.keysym.sym >= SDLK_KP_1) && (sdlevent.key.keysym.sym <= SDLK_KP_9)) {
-                    skip_next_textinput = '1' + (((int)sdlevent.key.keysym.sym) - ((int) SDLK_KP_1));
-                }
-            }
+            bSawUpdatableEvent = true;
 
             unsigned int myState = 0;
-            Event->What = (sdlevent.key.state == SDL_PRESSED) ? evKeyDown : evKeyUp;
+            Event->What = (sdlevent.key.down) ? evKeyDown : evKeyUp;
 
-            if (sdlevent.key.keysym.mod & KMOD_SHIFT) myState |= kfShift;
-            if (sdlevent.key.keysym.mod & KMOD_CTRL) myState |= kfCtrl;
-            if (sdlevent.key.keysym.mod & KMOD_LALT) myState |= kfAlt;  // Hack: I use RALT to fake XK_KP_Begin on my MacBook. Ignore it here. --ryan.
+            if (sdlevent.key.mod & SDL_KMOD_SHIFT) myState |= kfShift;
+            if (sdlevent.key.mod & SDL_KMOD_CTRL) myState |= kfCtrl;
+            if (sdlevent.key.mod & SDL_KMOD_LALT) myState |= kfAlt;  // Hack: I use RALT to fake XK_KP_Begin on my MacBook. Ignore it here. --ryan.
 
             unsigned int i;
             for (i = 0; i < SDL_arraysize(key_table); i++) {
                 long k;
-                if (sdlevent.key.keysym.sym == key_table[i].keysym) {
+                if (sdlevent.key.key == key_table[i].keysym) {
                     k = key_table[i].keycode;
                     if ((k < 256) && (myState == kfShift)) {
                         myState = 0;
@@ -1185,57 +1172,22 @@ static void ProcessSDLEvent(const SDL_Event &sdlevent, TEvent *Event) {
                 }
             }
             if (i == SDL_arraysize(key_table)) {
-                long key = (long) sdlevent.key.keysym.sym;
-                if ((key < 256) && (myState & (kfCtrl|kfAlt))) {
-                    if ((key >= 'a') && (key < 'z' + 32)) {
-                        key &= ~0x20;
+                long key = (long) SDL_GetKeyFromScancode(sdlevent.key.scancode, sdlevent.key.mod, false);
+                if (key < 256) {
+                    if (myState & (kfCtrl|kfAlt)) {
+                        if ((key >= 'a') && (key < 'z' + 32)) {
+                            key &= ~0x20;
+                        }
+                        if ((myState & kfCtrl) && key < 32)
+                            key += 64;
                     }
-                    if ((myState & kfCtrl) && key < 32)
-                        key += 64;
-
                     Event->Key.Code = key | myState;
                 } else {
                     Event->What = evNone;
                 }
             }
 
-            //if (Event->What != evNone) { printf("EVENT what=%d, KeyCode=%d\n", (int) Event->What, (int) Event->Key.Code); }
-        }
-        break;
-
-        case SDL_TEXTINPUT: {
-            const int skip_textinput = skip_next_textinput;
-            skip_next_textinput = 0;
-
-            // !!! FIXME: This is cheap, but disregard codepoints > 255.
-            FIXME("...unicode?");
-            // !!! FIXME: This is also cheap, but disregard multi-char strings.
-            FIXME("multichar strings?");
-            const Uint8 ch = (Uint8) sdlevent.text.text[0];
-
-            //printf("TEXTINPUT skip=%d ch=%d\n", (int) skip_textinput, (int) ch);
-
-            if ((ch & 128) == 0) { // high bit set? Not low ascii.
-                if (skip_textinput && (((int) ch) == skip_textinput)) {
-                    break;
-                }
-                unsigned int myState = 0;
-                const SDL_Keymod mod = SDL_GetModState();
-                Event->What = evKeyDown;
-
-                if (mod & KMOD_SHIFT) myState |= kfShift;
-                if (mod & KMOD_CTRL) myState |= kfCtrl;
-                if (mod & KMOD_LALT) myState |= kfAlt;  // Hack: I use RALT to fake XK_KP_Begin on my MacBook. Ignore it here. --ryan.
-
-                int key = (int) ch;
-                if (myState & (kfAlt | kfCtrl)) {
-                    if ((key >= 'a') && (key < 'z' + 32))
-                        key &= ~0x20;
-                }
-                if ((myState & kfCtrl) && key < 32)
-                    key += 64;
-                Event->Key.Code = key | myState;
-            }
+            //if (Event->What != evNone) { SDL_Log("EVENT what=%d, KeyCode=%d", (int) Event->What, (int) Event->Key.Code); }
         }
         break;
     }
@@ -1245,6 +1197,7 @@ static TEvent Pending = { evNone };
 
 int ConGetEvent(TEventMask EventMask, TEvent *Event, int WaitTime, int Delete) {
     if (bWindowDirty) {
+        //SDL_Log("bWindowDirty!");
 #if USE_SDL2_RENDER_API
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
@@ -1260,22 +1213,22 @@ int ConGetEvent(TEventMask EventMask, TEvent *Event, int WaitTime, int Delete) {
             *cursorptr = origcursorattr ^ 0x77;
         }
 
-        int x = 0, y = 0;
-        for (int i = 0; i < ScreenCols * ScreenRows * 2; i += 2) {
+        unsigned int x = 0, y = 0;
+        for (unsigned int i = 0; i < ScreenCols * ScreenRows * 2; i += 2) {
             const unsigned char cell = ScreenBuffer[i];
             const unsigned char attr = ScreenBuffer[i+1];
             const rgb *fgcolor = &dcolors[attr % 16];
             const rgb *bgcolor = &dcolors[attr / 16];
 
-            const SDL_Rect srcrect = { cell * FontCX, 0, FontCX, FontCY };
-            const SDL_Rect dstrect = { (int) (x * FontCX), (int) (y * FontCY), FontCX, FontCY };
+            const SDL_FRect srcrect = { (float) (cell * FontCX), 0.0f, (float) FontCX, (float) FontCY };
+            const SDL_FRect dstrect = { (float) (x * FontCX), (float) (y * FontCY), (float) FontCX, (float) FontCY };
 
             SDL_SetTextureColorMod(font, fgcolor->r, fgcolor->g, fgcolor->b);
             if (bgcolor->r || bgcolor->g || bgcolor->b) {
                 SDL_SetRenderDrawColor(renderer, bgcolor->r, bgcolor->g, bgcolor->b, 0xFF);
                 SDL_RenderFillRect(renderer, &dstrect);
             }
-            SDL_RenderCopy(renderer, font, &srcrect, &dstrect);
+            SDL_RenderTexture(renderer, font, &srcrect, &dstrect);
 
             x++;
             if (x >= ScreenCols) {
@@ -1361,11 +1314,24 @@ int ConGetEvent(TEventMask EventMask, TEvent *Event, int WaitTime, int Delete) {
             Pending.What = evNone;
     }
 
-    const Uint32 timeout = (WaitTime >= 0) ? (SDL_GetTicks()+WaitTime) : 0;
+    const Uint64 timeout = (WaitTime >= 0) ? (SDL_GetTicks()+WaitTime) : 0;
 
     Event->What = evNone;
 
     while (true) {
+        bool bHavePipes = false;
+        FD_ZERO(&read_fds);
+        for (int p = 0; p < MAX_PIPES; p++) {
+            if ((Pipes[p].used) && (Pipes[p].fd != -1)) {
+                bHavePipes = true;
+                FD_SET(Pipes[p].fd, &read_fds);
+            }
+        }
+
+        if (!bHavePipes && (WaitTime < 0)) {
+            SDL_WaitEvent(NULL);  // do the best blocking we can.
+        }
+
         SDL_Event sdlevent;
         while (SDL_PollEvent(&sdlevent)) {
             ProcessSDLEvent(sdlevent, Event);
@@ -1376,15 +1342,6 @@ int ConGetEvent(TEventMask EventMask, TEvent *Event, int WaitTime, int Delete) {
             else
                 Pending.What = evNone;
             Event->What = evNone;
-        }
-
-        bool bHavePipes = false;
-        FD_ZERO(&read_fds);
-        for (int p = 0; p < MAX_PIPES; p++) {
-            if ((Pipes[p].used) && (Pipes[p].fd != -1)) {
-                bHavePipes = true;
-                FD_SET(Pipes[p].fd, &read_fds);
-            }
         }
 
         if (bHavePipes) {
@@ -1410,7 +1367,7 @@ int ConGetEvent(TEventMask EventMask, TEvent *Event, int WaitTime, int Delete) {
         }
 
         if (WaitTime >= 0) {
-            if (SDL_TICKS_PASSED(SDL_GetTicks(), timeout)) {
+            if (SDL_GetTicks() > timeout) {
                 return -1;
             }
         }

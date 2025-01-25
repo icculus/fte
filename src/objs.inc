@@ -2,7 +2,10 @@ CFTE_OBJS = \
 cfte.$(OEXT) \
 s_files.$(OEXT)
 
-OBJS = \
+MAINOBJS =\
+main.$(OEXT)
+
+MOSTOBJS = \
 indent.$(OEXT) \
 e_mark.$(OEXT) \
 o_modemap.$(OEXT) \
@@ -71,6 +74,10 @@ egui.$(OEXT) \
 fte.$(OEXT) \
 commands.$(OEXT) \
 log.$(OEXT)
+
+OBJS = \
+$(MOSTOBJS) \
+$(MAINOBJS)
 
 OS2OBJS = e_os2.$(OEXT)
 

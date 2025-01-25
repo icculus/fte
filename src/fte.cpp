@@ -267,7 +267,14 @@ static int CmdLoadConfiguration(int &argc, char **argv) {
     return 1;
 }
 
-int main(int argc, char **argv) {
+static int Gargc = 0;
+static char **Gargv = NULL;
+
+int FteMainInit(int argc, char **argv)
+{
+    Gargc = argc;
+    Gargv = argv;
+
 #if defined(_DEBUG) && defined(MSVC) && defined(MSVCDEBUG)
    _CrtSetReportMode( _CRT_WARN, _CRTDBG_MODE_FILE );
    _CrtSetReportFile( _CRT_WARN, _CRTDBG_FILE_STDERR );
@@ -300,24 +307,28 @@ int main(int argc, char **argv) {
     if (CmdLoadConfiguration(argc, argv) == 0)
         return 1;
 
-    STARTFUNC("main");
-
     EGUI *g = new EGUI(argc, argv, ScreenSizeX, ScreenSizeY);
     if (gui == 0 || g == 0)
         DieError(1, "Failed to initialize display\n");
 
-    gui->Run();
+    return gui->Start(argc, argv);
+}
 
+void FteMainQuit(void)
+{
 #if defined(OS2) && !defined(DBMALLOC) && defined(CHECKHEAP)
     if (_heapchk() != _HEAPOK)
         DieError(0, "Heap memory is corrupt.");
 #endif
 
-    delete gui;
-    gui = 0;
+    if (gui) {
+        gui->Stop();
+        delete gui;
+        gui = NULL;
+    }
 
 #if defined(__EMX__)
-    free(argv[0]);
+    free(Gargv[0]);
 #endif
 
 #if defined(OS2) && !defined(DBMALLOC) && defined(CHECKHEAP)
@@ -332,7 +343,5 @@ int main(int argc, char **argv) {
 #if defined(__DEBUG_ALLOC__)
     _dump_allocated(64);
 #endif
-
-    ENDFUNCRC(0);
-    //return 0;
 }
+

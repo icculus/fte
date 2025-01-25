@@ -495,7 +495,7 @@ int GView::Execute() {
     int SaveRc = Result;
     int NewResult;
     int didFocus = 0;
-    
+
     if (FocusCapture == 0) {
         if (CaptureFocus(1) == 0) return -1;
         didFocus = 1;
@@ -1078,7 +1078,7 @@ void HandleHScroll(GView *view, TEvent &E) {
 
 void GUI::ProcessEvent() {
     TEvent E;
-    
+
     E = NextEvent;
     if (E.What != evNone) {
         NextEvent.What = evNone;
@@ -1088,10 +1088,11 @@ void GUI::ProcessEvent() {
           E.What == evNone )
        )
     {
-        frames->Update();
+        //frames->Update();
         while(ConGetEvent(evMouse | evCommand | evKeyboard, &E, -1, 1, 0) == -1 ||
            (E.What == evMouseMove && E.Mouse.Buttons == 0));
     }
+
     if (E.What != evNone) {
         GView *view = frames->Active;
 
@@ -1201,20 +1202,20 @@ void GUI::ProcessEvent() {
                 break;
             }
         }
-        if (E.What != evNone)
+        if (E.What != evNone) {
             DispatchEvent(frames, view, E);
+            if (frames) {
+                frames->Update();
+            }
+        }
     }
 }
 
 int GUI::Run() {
-    if (Start(fArgc, fArgv) == 0) {
-        doLoop = 1;
-        while (doLoop)
-            ProcessEvent();
-        Stop();
-        return 0;
-    }
-    return 1;
+    doLoop = 1;
+    while (doLoop)
+        ProcessEvent();
+    return 0;
 }
 
 int GUI::multiFrame() {

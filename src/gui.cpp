@@ -30,6 +30,7 @@ void GUI::deleteFrame(GFrame *frame) {
 }
 
 int GUI::Start(int &/*argc*/, char ** /*argv*/) {
+    doLoop = 1;
     return 0;
 }
 

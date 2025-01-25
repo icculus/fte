@@ -2,7 +2,7 @@
 
 # Versions:
 #  xfte - using XLib (the most stable)
-#  sdlfte - using SDL2 (the most ...portable?)
+#  sdlfte - using SDL3 (the most ...portable?)
 
 #  vfte - for Linux console directly (with limitations, see con_linux.cpp)
 
@@ -137,12 +137,12 @@ MOC      = moc
 LIBDIR   = 
 INCDIR   =
 
-#OPTIMIZE = -g # -O -g
-OPTIMIZE = -O3 -g
+#OPTIMIZE = -O3 -g
 #OPTIMIZE = -O2 -s
+OPTIMIZE = -O0 -ggdb3
 
-SDLCFLAGS := $(shell sdl2-config --cflags)
-SDLLIBS := $(shell sdl2-config --libs)
+SDLCFLAGS := $(shell pkg-config sdl3 --cflags)
+SDLLIBS := $(shell pkg-config sdl3 --libs)
 
 CCFLAGS  = $(OPTIMIZE) $(I18NOPTIONS) $(APPOPTIONS) $(COPTIONS) -DUNIX $(UOS) $(INCDIR) $(XINCDIR) $(QINCDIR) $(MINCDIR) $(SINCDIR) $(USE_FILE_OFFSET64) $(SDLCFLAGS)
 LDFLAGS  = $(OPTIMIZE) $(LIBDIR) $(XLIBDIR) $(QLIBDIR) $(MLIBDIR)
@@ -190,7 +190,7 @@ defcfg.cnf: $(DEFAULT_FTE_CONFIG) cfte
 	./cfte $(DEFAULT_FTE_CONFIG) defcfg.cnf
 
 sdlfte: $(OBJS) $(SDLOBJS)
-	$(LD) $(LDFLAGS) $(OBJS) $(SDLOBJS) $(SDLLIBS) -o sdlfte -lGL
+	$(LD) $(LDFLAGS) $(MOSTOBJS) $(SDLOBJS) $(SDLLIBS) -o sdlfte
 
 xfte: $(OBJS) $(XOBJS)
 	$(LD) $(LDFLAGS) $(OBJS) $(XOBJS) $(XLIBS) -o xfte
