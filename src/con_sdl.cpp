@@ -40,8 +40,8 @@
 #define MIN_SCRWIDTH 20
 #define MIN_SCRHEIGHT 6
 
-#define MAX_PIPES 40
-//#define PIPE_BUFLEN 4096
+#define MAX_PIPES 40  // !!! FIXME: do we really need _40_ of these at once?
+#define PIPE_BUFLEN 4096
 
 #include "sdl_font.h"
 
@@ -69,11 +69,11 @@ static inline void dbg(const char *fmt, ...)
 #endif
 
 typedef struct {
-    int used;
-    int id;
-    int fd;
-    int pid;
-    int stopped;
+    bool used;
+    SDL_IOStream *fd;
+    SDL_Process *pid;
+    char *readbuf;
+    int readbufpos;
     EModel *notify;
 } GPipe;
 
@@ -1001,7 +1001,6 @@ int ConGetEvent(TEventMask EventMask, TEvent *Event, int WaitTime, int Delete) {
         bWindowDirty = false;
     }
 
-    fd_set read_fds;
     Event->What = evNone;
     if (Pending.What != evNone) {
         *Event = Pending;
@@ -1018,11 +1017,11 @@ int ConGetEvent(TEventMask EventMask, TEvent *Event, int WaitTime, int Delete) {
 
     while (true) {
         bool bHavePipes = false;
-        FD_ZERO(&read_fds);
         for (int p = 0; p < MAX_PIPES; p++) {
-            if ((Pipes[p].used) && (Pipes[p].fd != -1)) {
+            const GPipe *pipe = &Pipes[p];
+            if (pipe->used && pipe->fd) {
                 bHavePipes = true;
-                FD_SET(Pipes[p].fd, &read_fds);
+                break;
             }
         }
 
@@ -1043,22 +1042,32 @@ int ConGetEvent(TEventMask EventMask, TEvent *Event, int WaitTime, int Delete) {
         }
 
         if (bHavePipes) {
-            struct timeval timeout = { 0, 0 };  // poll the pipes.
-            if (select((int) (sizeof(fd_set) * 8), FD_SET_CAST() &read_fds, NULL, NULL, &timeout) > 0) {
-                for (int pp = 0; pp < MAX_PIPES; pp++) {
-                    if ((Pipes[pp].used) && (Pipes[pp].fd != -1)) {
-                        if (FD_ISSET(Pipes[pp].fd, &read_fds)) {
-                            if (Pipes[pp].notify) {
-                                Event->What = evNotify;
-                                Event->Msg.View = 0;
-                                Event->Msg.Model = Pipes[pp].notify;
-                                Event->Msg.Command = cmPipeRead;
-                                Event->Msg.Param1 = pp;
-                                Pipes[pp].stopped = 0;
-                            }
-                            //fprintf(stderr, "Pipe %d\n", Pipes[pp].fd);
-                            return 0;
+            for (int p = 0; p < MAX_PIPES; p++) {
+                GPipe *pipe = &Pipes[p];
+                if (pipe->used && pipe->fd) {
+                    const int readlen = PIPE_BUFLEN - pipe->readbufpos;
+                    if (readlen > 0) {
+                        const int rc = (int) SDL_ReadIO(pipe->fd, pipe->readbuf + pipe->readbufpos, readlen);
+                        pipe->readbufpos += rc;
+                        if ((rc == 0) && (SDL_GetIOStatus(pipe->fd) != SDL_IO_STATUS_NOT_READY)) {
+                            //fprintf(stderr, "Pipe Read: Got %d %d (failure)\n", p, rc); }
+                            SDL_CloseIO(pipe->fd);
+                            pipe->fd = NULL;
+                        } else {
+                            //fprintf(stderr, "Pipe Read: Got %d %d (non-failure)\n", p, rc); }
                         }
+                    }
+
+                    if ((pipe->readbufpos > 0) || !pipe->fd) {
+                        if (pipe->notify) {
+                            Event->What = evNotify;
+                            Event->Msg.View = 0;
+                            Event->Msg.Model = pipe->notify;
+                            Event->Msg.Command = cmPipeRead;
+                            Event->Msg.Param1 = p;
+                        }
+                        //fprintf(stderr, "Pipe %p\n", pipe->fd);
+                        return 0;
                     }
                 }
             }
@@ -1189,53 +1198,63 @@ int GUI::ShowEntryScreen() {
 
 int GUI::OpenPipe(char *Command, EModel *notify) {
 #ifndef NO_PIPES
-    int i;
+    for (int i = 0; i < MAX_PIPES; i++) {
+        GPipe *pipe = &Pipes[i];
+        if (!pipe->used) {
+            SDL_zerop(pipe);
+            pipe->notify = notify;
 
-    for (i = 0; i < MAX_PIPES; i++) {
-        if (Pipes[i].used == 0) {
-            int pfd[2];
-
-            Pipes[i].id = i;
-            Pipes[i].notify = notify;
-            Pipes[i].stopped = 1;
-
-            if (pipe((int *)pfd) == -1)
+            SDL_PropertiesID props = SDL_CreateProperties();
+            if (!props) {
                 return -1;
-
-            switch (Pipes[i].pid = fork()) {
-            case -1: /* fail */
-                return -1;
-            case 0: /* child */
-                setenv("LANG", "C", 1);  /* so we don't get UTF-8 stuff unnecesarily. */
-                signal(SIGPIPE, SIG_DFL);
-                close(pfd[0]);
-                close(0);
-                assert(open("/dev/null", O_RDONLY) == 0);
-                dup2(pfd[1], 1);
-                dup2(pfd[1], 2);
-                close(pfd[1]);
-                _exit(system(Command));
-            default:
-                close(pfd[1]);
-                fcntl(pfd[0], F_SETFL, O_NONBLOCK);
-                Pipes[i].fd = pfd[0];
             }
-            Pipes[i].used = 1;
+
+            SDL_Environment *env = SDL_CreateEnvironment(true);
+            if (!env) {
+                SDL_DestroyProperties(props);
+                return -1;
+            }
+
+            pipe->readbuf = (char *) SDL_malloc(PIPE_BUFLEN);
+            if (!pipe->readbuf) {
+                SDL_DestroyProperties(props);
+                SDL_DestroyEnvironment(env);
+                return -1;
+            }
+
+            SDL_SetEnvironmentVariable(env, "LANG", "C", true);  // so we don't get UTF-8 stuff unnecesarily.
+
+            const char *args[] = { "/bin/sh", "-c", Command, NULL };  // !!! FIXME: /bin/sh ...?
+            SDL_SetPointerProperty(props, SDL_PROP_PROCESS_CREATE_ARGS_POINTER, args);
+            SDL_SetPointerProperty(props, SDL_PROP_PROCESS_CREATE_ENVIRONMENT_POINTER, env);
+            SDL_SetNumberProperty(props, SDL_PROP_PROCESS_CREATE_STDOUT_NUMBER, SDL_PROCESS_STDIO_APP);
+            SDL_SetBooleanProperty(props, SDL_PROP_PROCESS_CREATE_STDERR_TO_STDOUT_BOOLEAN, true);
+            pipe->pid = SDL_CreateProcessWithProperties(props);
+            SDL_DestroyProperties(props);
+            SDL_DestroyEnvironment(env);
+
+            if (!pipe->pid) {
+                SDL_free(pipe->readbuf);
+                pipe->readbuf = NULL;
+                return -1;
+            }
+
+            pipe->fd = SDL_GetProcessOutput(pipe->pid);
+            pipe->used = true;
+
             //fprintf(stderr, "Pipe Open: %d\n", i);
             return i;
         }
     }
-    return -1;
-#else
-    return 0;
 #endif
+    return -1;
 }
 
 int GUI::SetPipeView(int id, EModel *notify) {
 #ifndef NO_PIPES
-    if (id < 0 || id > MAX_PIPES)
+    if (id < 0 || id >= MAX_PIPES)
         return -1;
-    if (Pipes[id].used == 0)
+    if (!Pipes[id].used)
         return -1;
     //fprintf(stderr, "Pipe View: %d %08X\n", id, notify);
     Pipes[id].notify = notify;
@@ -1244,52 +1263,69 @@ int GUI::SetPipeView(int id, EModel *notify) {
 }
 
 int GUI::ReadPipe(int id, void *buffer, int len) {
-#ifndef NO_PIPES
-    int rc;
+    int rc = -1;
 
-    if (id < 0 || id > MAX_PIPES)
+#ifndef NO_PIPES
+    if (id < 0 || id >= MAX_PIPES)
         return -1;
-    if (Pipes[id].used == 0)
+    if (!Pipes[id].used)
         return -1;
     //fprintf(stderr, "Pipe Read: Get %d %d\n", id, len);
 
-    rc = read(Pipes[id].fd, buffer, len);
-    //fprintf(stderr, "Pipe Read: Got %d %d\n", id, len);
-    if (rc == 0) {
-        close(Pipes[id].fd);
-        Pipes[id].fd = -1;
-        return -1;
+    // we actually read elsewhere.
+    GPipe *pipe = &Pipes[id];
+    rc = SDL_min(pipe->readbufpos, len);
+    if (rc) {
+        SDL_memcpy(buffer, pipe->readbuf, rc);
+        pipe->readbufpos -= rc;
+        SDL_memmove(pipe->readbuf, pipe->readbuf + rc, pipe->readbufpos);
+    } else if (!pipe->fd) {
+        rc = -1;
     }
-    if (rc == -1) {
-        Pipes[id].stopped = 1;
-        return 0;
-    }
-    return rc;
-#else
-    return 0;
 #endif
+
+    //SDL_Log("ReadPipe=%d", rc);
+    return rc;
 }
 
 int GUI::ClosePipe(int id) {
-#ifndef NO_PIPES
-    int status;
+    int exitcode = 127;
 
-    if (id < 0 || id > MAX_PIPES)
+#ifndef NO_PIPES
+    if (id < 0 || id >= MAX_PIPES)
         return -1;
-    if (Pipes[id].used == 0)
+
+    GPipe *pipe = &Pipes[id];
+    if (!pipe->used) {
         return -1;
-    if (Pipes[id].fd != -1)
-        close(Pipes[id].fd);
-    kill(Pipes[id].pid, SIGHUP);
-    alarm(2);
-    waitpid(Pipes[id].pid, &status, 0);
-    alarm(0);
+    }
+
+    if (pipe->fd) {
+        SDL_CloseIO(pipe->fd);
+    }
+
+    SDL_free(pipe->readbuf);
+
+    if (!SDL_WaitProcess(pipe->pid, false, &exitcode)) {
+        SDL_KillProcess(pipe->pid, false);
+
+        const Uint32 endticks = SDL_GetTicks() + 2000;
+        while (!SDL_WaitProcess(pipe->pid, false, &exitcode)) {
+            if (SDL_GetTicks() >= endticks) {
+                exitcode = 127;
+                break;
+            }
+            SDL_Delay(30);
+        }
+    }
+
+    SDL_DestroyProcess(pipe->pid);
+
     //fprintf(stderr, "Pipe Close: %d\n", id);
-    Pipes[id].used = 0;
-    return WEXITSTATUS(status);
-#else
-    return 0;
+    SDL_zerop(pipe);
 #endif
+
+    return exitcode;
 }
 
 int GUI::RunProgram(int mode, char *Command) {
