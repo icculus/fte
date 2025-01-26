@@ -182,7 +182,7 @@ static int SetupSDLWindow(int argc, char **argv) {
     const int winw = ScreenCols * FontCX;
     const int winh = ScreenRows * FontCY;
 
-    Uint32 winflags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY;
+    Uint32 winflags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN;
 
     dpimult = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
     win = SDL_CreateWindow(winTitle, (int) (winw * dpimult), (int) (winh * dpimult), winflags);
@@ -795,6 +795,7 @@ static void ProcessSDLEvent(SDL_Event &sdlevent, TEvent *Event) {
                 h = (int) ((((float) h) / dpimult) * newdpimult);
                 dpimult = newdpimult;
                 SDL_SetWindowSize(win, w, h);
+                SDL_SetWindowMinimumSize(win, (int) (MIN_SCRWIDTH * FontCX * dpimult), (int) (MIN_SCRHEIGHT * FontCY * dpimult));
                 ResizeWindow((int) (w / dpimult), (int) (h / dpimult));
             }
             break;
