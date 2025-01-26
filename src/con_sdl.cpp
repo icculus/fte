@@ -31,12 +31,6 @@
 // this needs to be compiled under an SDL_main.h include, so it picks up WinMain, etc.
 #include "main.cpp"
 
-#ifdef CAST_FD_SET_INT
-#define FD_SET_CAST() (int *)
-#else
-#define FD_SET_CAST()
-#endif
-
 #define MIN_SCRWIDTH 20
 #define MIN_SCRHEIGHT 6
 
