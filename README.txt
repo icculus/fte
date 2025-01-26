@@ -5,10 +5,10 @@ The original README is below, but this fork diverged from the
 original decades ago. Don't send Marko bug reports for this fork.
 
 I have fixed a few things, updated it for modern compilers,
-changed a few things to my liking, and added SDL and OpenGL
-builds, which will work on most things without having to write
-_more_ platform-specific code. In modern times, I use the SDL
-build exclusively.
+changed a few things to my liking, and added an SDL3 build, which
+will work on most things without having to write _more_
+platform-specific code. In modern times, I use the SDL3 build
+exclusively.
 
 People often ask me why I use this as my primary development
 tool, and it's because I found FTE at a time in my life when
@@ -21,7 +21,7 @@ ports to all the platforms I was using, so I switched.
 
 Now I have so much muscle memory for it, I just love using
 it, warts and limitations and all. Being a million years
-old, it's resource usage is wildly low.
+old, its resource usage is wildly low.
 
 There are better, more powerful, and also-portable tools, so
 I don't recommend FTE to newcomers, but since I use it, I
