@@ -648,9 +648,6 @@ static void UpdateWindow(int xx, int yy, int ww, int hh) {
 
 static void ResizeWindow(int ww, int hh) {
     SDL_SetRenderLogicalPresentation(renderer, ww, hh, SDL_LOGICAL_PRESENTATION_LETTERBOX);
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderClear(renderer);
-    SDL_RenderPresent(renderer);
 
     bWindowDirty = true;
 
