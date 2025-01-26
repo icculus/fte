@@ -34,7 +34,7 @@
 #define MIN_SCRWIDTH 20
 #define MIN_SCRHEIGHT 6
 
-#define MAX_PIPES 40  // !!! FIXME: do we really need _40_ of these at once?
+#define MAX_PIPES 10
 #define PIPE_BUFLEN 4096
 
 #include "sdl_font.h"
