@@ -955,10 +955,9 @@ int ConGetEvent(TEventMask EventMask, TEvent *Event, int WaitTime, int Delete) {
                 startx = x;
             }
 
-            if ((x+1) < ScreenCols) {
-                x++;
-            } else {
-                if ((x != startx) && (lastcolor)) {
+            x++;
+            if (x >= ScreenCols) {
+                if (lastcolor) {
                     const SDL_FRect dstrect = { (float) (startx * FontCX), (float) (starty * FontCY), (float) (FontCX * (x - startx)), (float) FontCY };
                     SDL_RenderFillRect(renderer, &dstrect);
                 }
