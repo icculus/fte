@@ -935,21 +935,58 @@ int ConGetEvent(TEventMask EventMask, TEvent *Event, int WaitTime, int Delete) {
             *cursorptr = origcursorattr ^ 0x77;
         }
 
+        unsigned int startx = 0, starty = 0;
         unsigned int x = 0, y = 0;
+        Uint32 lastcolor = 0x00000000;
+        for (unsigned int i = 0; i < ScreenCols * ScreenRows * 2; i += 2) {
+            const unsigned char attr = ScreenBuffer[i+1];
+            const rgb *bgcolor = &dcolors[attr / 16];
+
+            const Uint32 thiscolor = (((Uint32) bgcolor->r) << 16) | (((Uint32) bgcolor->g) << 8) | ((Uint32) bgcolor->b);
+            if (lastcolor != thiscolor) {
+                if (lastcolor) {  // don't draw black, we're already cleared to black.
+                    if (x != startx) {
+                        const SDL_FRect dstrect = { (float) (startx * FontCX), (float) (starty * FontCY), (float) (FontCX * (x - startx)), (float) FontCY };
+                        SDL_RenderFillRect(renderer, &dstrect);
+                    }
+                }
+                if (thiscolor) {
+                    SDL_SetRenderDrawColor(renderer, bgcolor->r, bgcolor->g, bgcolor->b, 0xFF);
+                }
+                lastcolor = thiscolor;
+                startx = x;
+            }
+
+            if ((x+1) < ScreenCols) {
+                x++;
+            } else {
+                if ((x != startx) && (lastcolor)) {
+                    const SDL_FRect dstrect = { (float) (startx * FontCX), (float) (starty * FontCY), (float) (FontCX * (x - startx)), (float) FontCY };
+                    SDL_RenderFillRect(renderer, &dstrect);
+                }
+                y++;
+                startx = x = 0;
+                starty = y;
+            }
+        }
+
+        lastcolor = 0x00000000;
+        SDL_SetTextureColorMod(font, 0, 0, 0);
+        x = y = 0;
         for (unsigned int i = 0; i < ScreenCols * ScreenRows * 2; i += 2) {
             const unsigned char cell = ScreenBuffer[i];
             const unsigned char attr = ScreenBuffer[i+1];
             const rgb *fgcolor = &dcolors[attr % 16];
-            const rgb *bgcolor = &dcolors[attr / 16];
 
             const SDL_FRect srcrect = { (float) (cell * FontCX), 0.0f, (float) FontCX, (float) FontCY };
             const SDL_FRect dstrect = { (float) (x * FontCX), (float) (y * FontCY), (float) FontCX, (float) FontCY };
 
-            SDL_SetTextureColorMod(font, fgcolor->r, fgcolor->g, fgcolor->b);
-            if (bgcolor->r || bgcolor->g || bgcolor->b) {
-                SDL_SetRenderDrawColor(renderer, bgcolor->r, bgcolor->g, bgcolor->b, 0xFF);
-                SDL_RenderFillRect(renderer, &dstrect);
+            const Uint32 thiscolor = (((Uint32) fgcolor->r) << 16) | (((Uint32) fgcolor->g) << 8) | ((Uint32) fgcolor->b);
+            if (thiscolor != lastcolor) {
+                SDL_SetTextureColorMod(font, fgcolor->r, fgcolor->g, fgcolor->b);
+                lastcolor = thiscolor;
             }
+
             SDL_RenderTexture(renderer, font, &srcrect, &dstrect);
 
             x++;
