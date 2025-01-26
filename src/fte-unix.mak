@@ -137,6 +137,7 @@ MOC      = moc
 LIBDIR   = 
 INCDIR   =
 
+#OPTIMIZE = -O1 -fsanitize=address -ggdb3
 #OPTIMIZE = -O3 -g
 #OPTIMIZE = -O2 -s
 OPTIMIZE = -O0 -ggdb3
