@@ -99,8 +99,6 @@ static bool bCursorShown = true;
 static float dpimult = 1.0f;
 static bool bSawUpdatableEvent = false;
 
-#define USE_SDL2_RENDER_API 1
-
 struct rgb {
     Uint8 r, g, b;
 };
@@ -124,68 +122,8 @@ static const rgb dcolors[] =
     { 255, 255, 255 },  //     white
 };
 
-#if USE_SDL2_RENDER_API
 static SDL_Renderer *renderer = NULL;
 static SDL_Texture *font = NULL;
-#else
-#define GL_GLEXT_PROTOTYPES 1
-#include "SDL_opengl.h"
-#include "SDL_opengl_glext.h"
-static SDL_GLContext glctx = NULL;
-static GLuint font = 0;
-static GLuint static_vbo = 0;
-static GLuint vbos[64];
-static GLuint current_vbo = 0;
-static GLuint program = 0;
-static GLint cell_loc = 0;
-static GLint fgcolor_loc = 0;
-static GLint bgcolor_loc = 0;
-static void GenerateStaticVertices()
-{
-    GLfloat *static_vertices = new GLfloat[(ScreenCols * ScreenRows) * 16];
-    GLfloat *ptr = static_vertices;
-
-    const GLfloat minu = 0.0f;
-    const GLfloat minv = 1.0f;
-    const GLfloat maxu = 1.0f;
-    const GLfloat maxv = 0.0f;
-
-    for (int y = ScreenRows - 1; y >= 0; y--)
-    {
-        const GLfloat miny = ((((GLfloat) y) / (GLfloat) ScreenRows) * 2.0f) - 1.0f;
-        const GLfloat maxy = ((((GLfloat) (y+1)) / (GLfloat) ScreenRows) * 2.0f) - 1.0f;
-
-        for (int x = 0; x < ScreenCols; x++)
-        {
-            const GLfloat minx = ((((GLfloat) x) / (GLfloat) ScreenCols) * 2.0f) - 1.0f;
-            const GLfloat maxx = ((((GLfloat) (x+1)) / (GLfloat) ScreenCols) * 2.0f) - 1.0f;
-
-            *(ptr++) = minx;
-            *(ptr++) = miny;
-            *(ptr++) = minu;
-            *(ptr++) = minv;
-
-            *(ptr++) = maxx;
-            *(ptr++) = miny;
-            *(ptr++) = maxu;
-            *(ptr++) = minv;
-
-            *(ptr++) = maxx;
-            *(ptr++) = maxy;
-            *(ptr++) = maxu;
-            *(ptr++) = maxv;
-
-            *(ptr++) = minx;
-            *(ptr++) = maxy;
-            *(ptr++) = minu;
-            *(ptr++) = maxv;
-        }
-    }
-
-    glBufferData(GL_ARRAY_BUFFER, ScreenCols * ScreenRows * sizeof (GLfloat) * 16, static_vertices, GL_STATIC_DRAW);
-    delete[] static_vertices;
-}
-#endif
 
 static int AllocBuffer() {
     unsigned char *p;
@@ -245,9 +183,6 @@ static int SetupSDLWindow(int argc, char **argv) {
     const int winh = ScreenRows * FontCY;
 
     Uint32 winflags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY;
-    #if !USE_SDL2_RENDER_API
-    winflags |= SDL_WINDOW_OPENGL;
-    #endif
 
     dpimult = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
     win = SDL_CreateWindow(winTitle, (int) (winw * dpimult), (int) (winh * dpimult), winflags);
@@ -287,7 +222,6 @@ static int SetupSDLWindow(int argc, char **argv) {
 
     SDL_SetSurfaceColorKey(surface, true, SDL_MapRGB(SDL_GetPixelFormatDetails(surface->format), SDL_GetSurfacePalette(surface), 0, 0, 0));
 
-#if USE_SDL2_RENDER_API
     renderer = SDL_CreateRenderer(win, NULL);
     if (!renderer)
     {
@@ -324,172 +258,6 @@ static int SetupSDLWindow(int argc, char **argv) {
     SDL_SetTextureScaleMode(font, SDL_SCALEMODE_NEAREST);
     SDL_SetTextureBlendMode(font, SDL_BLENDMODE_BLEND);
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
-#else
-    // !!! FIXME: check for errors.
-    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
-    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
-    //SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    //SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-
-    glctx = SDL_GL_CreateContext(win);
-    SDL_GL_MakeCurrent(win, glctx);
-    SDL_GL_SetSwapInterval(0);
-
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    SDL_ShowWindow(win);
-    glClear(GL_COLOR_BUFFER_BIT);
-    SDL_GL_SwapWindow(win);
-
-    glActiveTexture(GL_TEXTURE0);
-
-    glEnable(GL_TEXTURE_2D);
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_ALPHA_TEST);
-    glDisable(GL_SCISSOR_TEST);
-    glDisable(GL_BLEND);
-    glDisable(GL_CULL_FACE);
-
-    int drawablew, drawableh;
-    SDL_GL_GetDrawableSize(win, &drawablew, &drawableh);
-    glViewport(0, drawableh % FontCY, drawablew - (drawablew % FontCX), drawableh - (drawableh % FontCY));
-
-    SDL_Surface *cvt = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA8888, 0);
-    SDL_DestroySurface(surface);
-    surface = cvt;
-
-    glGenTextures(1, &font);
-    glBindTexture(GL_TEXTURE_2D, font);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glPixelStorei(GL_UNPACK_ROW_LENGTH, surface->w);    
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, surface->w, surface->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, surface->pixels);
-    SDL_DestroySurface(surface);
-
-    GLint ok = 0;
-
-    const char *vshader_src =
-        "attribute vec2 position;"
-        "attribute vec2 texposition;"
-        "attribute float cell;"
-        "attribute vec3 fgcolor;"
-        "attribute vec3 bgcolor;"
-        "varying vec4 v_fgcolor;"
-        "varying vec4 v_bgcolor;"
-        "void main() {"
-            "float x = float(cell + texposition.x) / 256.0;"
-            "gl_Position = vec4(position, 0.0, 1.0);"
-            "v_fgcolor = vec4(fgcolor, 1.0);"
-            "v_bgcolor = vec4(bgcolor, 1.0);"
-            "gl_TexCoord[0] = vec4(x, texposition.y, 0, 1);"
-        "}";
-
-    const GLint vcodelen = strlen(vshader_src);
-    const GLuint vshader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vshader, 1, (const GLchar**) &vshader_src, &vcodelen);
-    glCompileShader(vshader);
-
-    glGetShaderiv(vshader, GL_COMPILE_STATUS, &ok);
-    if (!ok)
-    {
-        GLchar error_buffer[512];
-        GLsizei len = 0;
-        glGetShaderInfoLog(vshader, sizeof (error_buffer), &len, error_buffer);
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Failed to compile vertex shader", error_buffer, win);
-        SDL_Quit();
-        DieError(1, "SDLFTE Fatal: bad vertex shader: %s", error_buffer);
-    }
-
-    const char *fshader_src =
-        "uniform sampler2D font;"
-        "varying vec4 v_fgcolor;"
-        "varying vec4 v_bgcolor;"
-        "void main() {"
-            "vec4 t0 = texture2D(font, gl_TexCoord[0].xy) * v_fgcolor;"
-            "gl_FragColor = mix(v_bgcolor, t0, t0.a);"
-        "}";
-
-    const GLint fcodelen = strlen(fshader_src);
-    const GLuint fshader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fshader, 1, (const GLchar**) &fshader_src, &fcodelen);
-    glCompileShader(fshader);
-
-    glGetShaderiv(fshader, GL_COMPILE_STATUS, &ok);
-    if (!ok)
-    {
-        GLchar error_buffer[512];
-        GLsizei len = 0;
-        glGetShaderInfoLog(fshader, sizeof (error_buffer), &len, error_buffer);
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Failed to compile fragment shader", error_buffer, win);
-        SDL_Quit();
-        DieError(1, "SDLFTE Fatal: bad fragment shader: %s", error_buffer);
-    }
-
-    program = glCreateProgram();
-    glAttachShader(program, vshader);
-    glAttachShader(program, fshader);
-    glLinkProgram(program);
-
-    glGetProgramiv(program, GL_LINK_STATUS, &ok);
-    if (!ok)
-    {
-        GLchar error_buffer[512];
-        GLsizei len = 0;
-        glGetProgramInfoLog(program, sizeof (error_buffer), &len, error_buffer);
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Failed to link final shader program", error_buffer, win);
-        SDL_Quit();
-        DieError(1, "SDLFTE Fatal: can't link shaders: %s", error_buffer);
-    }
-
-    glDeleteShader(vshader);
-    glDeleteShader(fshader);
-
-    glUseProgram(program);
-
-    glUniform1i(glGetUniformLocation(program, "font"), 0);
-
-    glGenBuffers(1, &static_vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, static_vbo);
-    GenerateStaticVertices();
-
-    GLint loc;
-
-    loc = glGetAttribLocation(program, (const GLchar *) "position");
-    glVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 16, (void *) 0);
-    glEnableVertexAttribArray(loc);
-
-    loc = glGetAttribLocation(program, (const GLchar *) "texposition");
-    glVertexAttribPointer(loc, 2, GL_FLOAT, GL_FALSE, 16, (void *) 8);
-    glEnableVertexAttribArray(loc);
-
-    glGenBuffers(SDL_arraysize(vbos), vbos);
-    for (int i = 0; i < SDL_arraysize(vbos); i++) {
-        glBindBuffer(GL_ARRAY_BUFFER, vbos[i]);
-        glBufferData(GL_ARRAY_BUFFER, ScreenCols * ScreenRows * 7 * 4, NULL, GL_DYNAMIC_DRAW);
-    }
-    current_vbo = 0;
-
-    cell_loc = glGetAttribLocation(program, (const GLchar *) "cell");
-    glVertexAttribPointer(cell_loc, 1, GL_UNSIGNED_BYTE, GL_FALSE, 7, (void *) 0);
-    glEnableVertexAttribArray(cell_loc);
-
-    fgcolor_loc = glGetAttribLocation(program, (const GLchar *) "fgcolor");
-    glVertexAttribPointer(fgcolor_loc, 3, GL_UNSIGNED_BYTE, GL_TRUE, 7, (void *) 1);
-    glEnableVertexAttribArray(fgcolor_loc);
-
-    bgcolor_loc = glGetAttribLocation(program, (const GLchar *) "bgcolor");
-    glVertexAttribPointer(bgcolor_loc, 3, GL_UNSIGNED_BYTE, GL_TRUE, 7, (void *) 4);
-    glEnableVertexAttribArray(bgcolor_loc);
-#endif
 
     return 0;
 }
@@ -508,28 +276,10 @@ int ConInit(int XSize, int YSize) {
 }
 
 int ConDone(void) {
-#if USE_SDL2_RENDER_API
     SDL_DestroyTexture(font);
     font = NULL;
     SDL_DestroyRenderer(renderer);
     renderer = NULL;
-#else
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glDeleteTextures(1, &font);
-    font = 0;
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glDeleteBuffers(1, &static_vbo);
-    glDeleteBuffers(SDL_arraysize(vbos), vbos);
-    static_vbo = 0;
-    SDL_zeroa(vbos);
-    glUseProgram(0);
-    glDeleteProgram(program);
-    program = 0;
-    SDL_GL_MakeCurrent(win, NULL);
-    SDL_GL_DestroyContext(glctx);
-    glctx = NULL;
-#endif
-
     SDL_DestroyWindow(win);
     win = NULL;
     SDL_Quit();
@@ -768,19 +518,6 @@ int ConSetSize(int X, int Y) {
     //if (Refresh == 0)
     //    XResizeWindow(display, win, ScreenCols * FontCX, ScreenRows * FontCY);
 
-#if !USE_SDL2_RENDER_API
-	glBindBuffer(GL_ARRAY_BUFFER, static_vbo);
-    GenerateStaticVertices();
-    for (int i = 0; i < SDL_arraysize(vbos); i++) {
-        glBindBuffer(GL_ARRAY_BUFFER, vbos[i]);
-        glBufferData(GL_ARRAY_BUFFER, ScreenCols * ScreenRows * 7 * 4, NULL, GL_DYNAMIC_DRAW);
-    }
-    current_vbo = 0;
-    int drawablew, drawableh;
-    SDL_GetWindowSizeInPixels(win, &drawablew, &drawableh);
-    glViewport(0, drawableh % FontCY, drawablew - (drawablew % FontCX), drawableh - (drawableh % FontCY));
-#endif
-
     return 0;
 }
 
@@ -910,16 +647,10 @@ static void UpdateWindow(int xx, int yy, int ww, int hh) {
 }
 
 static void ResizeWindow(int ww, int hh) {
-#if USE_SDL2_RENDER_API
-    SDL_SetRenderLogicalPresentation(renderer, ww, hh,
-                                     SDL_LOGICAL_PRESENTATION_LETTERBOX);
+    SDL_SetRenderLogicalPresentation(renderer, ww, hh, SDL_LOGICAL_PRESENTATION_LETTERBOX);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
     SDL_RenderPresent(renderer);
-#else
-    glClear(GL_COLOR_BUFFER_BIT);
-    SDL_GL_SwapWindow(win);
-#endif
 
     bWindowDirty = true;
 
@@ -1084,10 +815,6 @@ static void ProcessSDLEvent(SDL_Event &sdlevent, TEvent *Event) {
         case SDL_EVENT_MOUSE_MOTION: {
             float mousex = sdlevent.motion.x;
             float mousey = sdlevent.motion.y;
-            #if !USE_SDL2_RENDER_API  // logical scaling handles this for the render api.
-            mousex /= dpimult;
-            mousey /= dpimult;
-            #endif
             Event->Mouse.X = (int) (mousex / FontCX);
             Event->Mouse.Y = (int) (mousey / FontCY);
             if (LastMouseX != Event->Mouse.X || LastMouseY != Event->Mouse.Y) {
@@ -1111,10 +838,6 @@ static void ProcessSDLEvent(SDL_Event &sdlevent, TEvent *Event) {
             bSawUpdatableEvent = true;
             float mousex = sdlevent.button.x;
             float mousey = sdlevent.button.y;
-            #if !USE_SDL2_RENDER_API  // logical scaling handles this for the render api.
-            mousex /= dpimult;
-            mousey /= dpimult;
-            #endif
             Event->Mouse.X = (int) (mousex / FontCX);
             Event->Mouse.Y = (int) (mousey / FontCY);
             Event->What = (sdlevent.button.down) ? evMouseDown : evMouseUp;
@@ -1198,7 +921,6 @@ static TEvent Pending = { evNone };
 int ConGetEvent(TEventMask EventMask, TEvent *Event, int WaitTime, int Delete) {
     if (bWindowDirty) {
         //SDL_Log("bWindowDirty!");
-#if USE_SDL2_RENDER_API
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
@@ -1242,64 +964,6 @@ int ConGetEvent(TEventMask EventMask, TEvent *Event, int WaitTime, int Delete) {
         }
 
         SDL_RenderPresent(renderer);
-#else
-        unsigned char *dynamic_buffer = new unsigned char[ScreenCols * ScreenRows * 7 * 4];
-        unsigned char *ptr = dynamic_buffer;
-        for (int i = 0; i < ScreenCols * ScreenRows * 2; i += 2)
-        {
-            const unsigned char cell = ScreenBuffer[i];
-            const unsigned char attr = ScreenBuffer[i+1];
-            const rgb *fgcolor = &dcolors[attr % 16];
-            const rgb *bgcolor = &dcolors[attr / 16];
-            for (int j = 0; j < 4; j++)
-            {
-                *(ptr++) = cell;
-                *(ptr++) = fgcolor->r;
-                *(ptr++) = fgcolor->g;
-                *(ptr++) = fgcolor->b;
-                *(ptr++) = bgcolor->r;
-                *(ptr++) = bgcolor->g;
-                *(ptr++) = bgcolor->b;
-            }
-        }
-
-        // Set up the cursor.
-        if (CursorVisible && bCursorShown)
-        {
-            unsigned char *p = CursorXYPos(CursorX, CursorY), attr;
-            attr = p[1] ^ 0x77;
-            const rgb *fgcolor = &dcolors[attr % 16];
-            const rgb *bgcolor = &dcolors[attr / 16];
-            ptr = dynamic_buffer + ((CursorY * ScreenCols) + CursorX) * 4 * 7;
-            for (int j = 0; j < 4; j++)
-            {
-                ptr++; // = cell;
-                *(ptr++) = fgcolor->r;
-                *(ptr++) = fgcolor->g;
-                *(ptr++) = fgcolor->b;
-                *(ptr++) = bgcolor->r;
-                *(ptr++) = bgcolor->g;
-                *(ptr++) = bgcolor->b;
-            }
-        }
-
-        glBindBuffer(GL_ARRAY_BUFFER, vbos[current_vbo]);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, ScreenCols * ScreenRows * 7 * 4, dynamic_buffer);
-        glVertexAttribPointer(cell_loc, 1, GL_UNSIGNED_BYTE, GL_FALSE, 7, (void *) 0);
-        glVertexAttribPointer(fgcolor_loc, 3, GL_UNSIGNED_BYTE, GL_TRUE, 7, (void *) 1);
-        glVertexAttribPointer(bgcolor_loc, 3, GL_UNSIGNED_BYTE, GL_TRUE, 7, (void *) 4);
-
-        delete[] dynamic_buffer;
-
-        current_vbo++;
-        if (current_vbo >= SDL_arraysize(vbos)) {
-            current_vbo = 0;
-        }
-
-        glClear(GL_COLOR_BUFFER_BIT);
-        glDrawArrays(GL_QUADS, 0, (ScreenCols * ScreenRows) * 4);
-        SDL_GL_SwapWindow(win);
-#endif
         bWindowDirty = false;
     }
 
