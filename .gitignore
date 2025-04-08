@@ -1,0 +1,4 @@
+src/*.o
+src/xfte
+src/cfte
+src/sdlfte
