@@ -13,11 +13,16 @@ jobs:
         #- { name: Windows, os: windows-latest }
         #- { name: MacOS,   os: macos-latest }
     steps:
+    - name: Set up SDL
+      id: sdl
+      uses: libsdl-org/setup-sdl@v1
+      with:
+        version: sdl3-latest
     - name: Setup Linux dependencies
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
-        sudo apt-get install libsdl2-dev libx11-dev libgl1-mesa-dev
+        sudo apt-get install dev libx11-dev
     - name: Get fte sources
       uses: actions/checkout@v2
     - name: Build
