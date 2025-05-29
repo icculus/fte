@@ -867,6 +867,10 @@ static void ProcessSDLEvent(SDL_Event &sdlevent, TEvent *Event) {
         {
             bSawUpdatableEvent = true;
 
+            if (sdlevent.key.key == 0) {
+                break;
+            }
+
             unsigned int myState = 0;
             Event->What = (sdlevent.key.down) ? evKeyDown : evKeyUp;
 
@@ -888,7 +892,7 @@ static void ProcessSDLEvent(SDL_Event &sdlevent, TEvent *Event) {
             }
             if (i == SDL_arraysize(key_table)) {
                 long key = (long) SDL_GetKeyFromScancode(sdlevent.key.scancode, sdlevent.key.mod, false);
-                if (key < 256) {
+                if ((key > 0) && (key < 256)) {
                     if (myState & (kfCtrl|kfAlt)) {
                         if ((key >= 'a') && (key < 'z' + 32)) {
                             key &= ~0x20;
