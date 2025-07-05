@@ -70,5 +70,5 @@ mode LUA: PLAIN {      # Lua Mode
     CommentStart        = ' (*';
     CommentEnd          = '*)';
 
-    RoutineRegexp       = /^\s*{local }*function\s+/;
+    RoutineRegexp       = /^\s*{local\s+}?{[a-zA-Z_][a-zA-Z0-9_\.]*\s*\=\s*}?function{\s*\(|\s|$}/;
 }
