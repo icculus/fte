@@ -22,7 +22,7 @@ menu MOpenInMode {
     item "&BIN"        { FileOpenInMode 'BIN' }
     item "4&GL"        { FileOpenInMode 'GL' }
     item "PHP"         { FileOpenInMode 'PHP' }
-    item "Lua"         { FileOpenInMode 'Lua' }
+    item "Lua"         { FileOpenInMode 'LUA' }
     item "P&ython"     { FileOpenInMode 'PYTHON' }
     item "&UScript"    { FileOpenInMode 'UNREALSCRIPT' }
 }
@@ -113,7 +113,7 @@ menu MChangeMode {
     item "&BIN"        { ChangeMode 'BIN' }
     item "4&GL"        { ChangeMode 'GL' }
     item "PHP"         { ChangeMode 'PHP' }
-    item "Lua"         { ChangeMode 'Lua' }
+    item "Lua"         { ChangeMode 'LUA' }
     item "P&ython"     { ChangeMode 'PYTHON' }
     item "&UScript"    { ChangeMode 'UNREALSCRIPT' }
 }
