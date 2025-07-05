@@ -1,0 +1,74 @@
+colorize LUA {
+    SyntaxParser       = 'SIMPLE';
+
+    color {
+        { 'Normal',        'Lang_Default' },
+        { 'Number',        'Lang_DecimalNumber' },
+        { 'HexNumber',     'Lang_HexNumber' },
+        { 'Punctuation',   'Lang_Punctuation' },
+        { 'String',        'Lang_String' },
+        { 'Comment',       'Lang_Comment' },
+        { 'Command',       'Lang_Assembler' }, # assembler
+        { 'CPreprocessor', 'Lang_Preprocessor' },
+    };
+
+    keyword 'Editor_Keywords' {
+        "do", "end", "while", "repeat", "until", "if", "elseif", "then",
+        "else", "for", "in", "function", "local", "return",
+        "dofile", "require", "include", "false", "nil", "true"
+    };
+
+    h_state 0 { 'Normal' }
+    h_trans { 4, '-s', 'a-zA-Z_', 'Normal' }
+    h_trans { 1, '<', '--[[', 'Comment' }
+    h_trans { 7, '<', '--', 'Comment' }
+    h_trans { 2, '<', '"', 'String' }
+    h_trans { 3, '<', '\'', 'String' }
+    h_trans { 5, '<', '0x', 'HexNumber' }
+    h_trans { 6, '<s', '0-9', 'Number' }
+    h_trans { 0, 'S', '_a-zA-Z0-9', 'Punctuation' }
+
+    h_state 1 { 'Comment' }
+    h_trans { 0, '>', ']]--', 'Comment' }
+
+    h_state 2 { 'String' }
+    h_trans { 0, '>', '"', 'String' }
+    h_trans { 0, '$', '', 'String' }
+
+    h_state 3 { 'String' }
+    h_trans { 0, '>', '\'', 'String' }
+    h_trans { 0, '$', '', 'String' }
+
+    h_state 4 { 'Normal' }
+    h_trans { 0, '$', '', 'Normal' }
+    h_wtype { 0, 0, 0, 'i', 'a-zA-Z0-9_' }
+
+    h_state 5 { 'HexNumber' }
+    h_trans { 0, '-S', '0-9A-Fa-f', 'Normal' }
+    h_trans { 0, '$', '', 'Normal' }
+
+    h_state 6 { 'Number' }
+    h_trans { 0, '-S', '0-9', 'Normal' }
+    h_trans { 0, '$', '', 'Normal' }
+
+    h_state 7 { 'Comment' }
+    h_trans { 0, '$', '', 'Comment' }
+}
+
+mode LUA: PLAIN {      # Lua Mode
+    FileNameRx          = /\.\clua$/;
+    HilitOn             = 1;
+    Colorizer           = 'LUA';
+    AutoIndent          = 0;
+    IndentMode          = 'PLAIN';
+    MatchCase           = 1;
+    Trim                = 1;
+    MultiLineHilit      = 1;
+    AutoHilitParen      = 1;
+
+    SaveFolds           = 2;      # save fold info at end of line
+    CommentStart        = ' (*';
+    CommentEnd          = '*)';
+
+    RoutineRegexp       = /^\s*{local }*function\s+/;
+}

@@ -160,6 +160,7 @@ include 'm_fte.fte';
 include 'm_ada.fte';
 include 'm_html.fte';
 include 'm_ldsgml.fte';
+include 'm_lua.fte';
 include 'm_ipf.fte';
 include 'm_make.fte';
 include 'm_resdlg.fte';
