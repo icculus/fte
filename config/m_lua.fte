@@ -56,7 +56,7 @@ colorize LUA {
 }
 
 mode LUA: PLAIN {      # Lua Mode
-    FileNameRx          = /\.\clua$/;
+    FileNameRx          = /\.\c{LUA}|{SINGE}$/;
     HilitOn             = 1;
     Colorizer           = 'LUA';
     AutoIndent          = 0;
