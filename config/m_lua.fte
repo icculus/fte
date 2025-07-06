@@ -14,8 +14,8 @@ colorize LUA {
 
     keyword 'Editor_Keywords' {
         "do", "end", "while", "repeat", "until", "if", "elseif", "then",
-        "else", "for", "in", "function", "local", "return",
-        "dofile", "require", "include", "false", "nil", "true"
+        "else", "for", "in", "function", "local", "return", "or", "not",
+        "and", "break", "require", "include", "false", "nil", "true",
     };
 
     h_state 0 { 'Normal' }
