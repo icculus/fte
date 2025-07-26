@@ -23,6 +23,7 @@ menu MOpenInMode {
     item "4&GL"        { FileOpenInMode 'GL' }
     item "PHP"         { FileOpenInMode 'PHP' }
     item "Lua"         { FileOpenInMode 'LUA' }
+    item "CMake"       { FileOpenInMode 'CMAKE' }
     item "P&ython"     { FileOpenInMode 'PYTHON' }
     item "&UScript"    { FileOpenInMode 'UNREALSCRIPT' }
 }
@@ -114,6 +115,7 @@ menu MChangeMode {
     item "4&GL"        { ChangeMode 'GL' }
     item "PHP"         { ChangeMode 'PHP' }
     item "Lua"         { ChangeMode 'LUA' }
+    item "CMake"       { ChangeMode 'CMAKE' }
     item "P&ython"     { ChangeMode 'PYTHON' }
     item "&UScript"    { ChangeMode 'UNREALSCRIPT' }
 }
