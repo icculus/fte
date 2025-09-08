@@ -89,6 +89,13 @@ bool IgnoreFilenameForDesktop(const char *path)
             return true;
     }
 
+    const char *ghtodoeditor = ".ghtodo_desc";
+    if (strncmp(fname, ghtodoeditor, strlen(ghtodoeditor)) == 0)
+    {
+        if (strcmp(ext, ".md") == 0)
+            return true;
+    }
+
     const char *gitparent = ".git";
     const char *giteditor = "COMMIT_EDITMSG";
     const size_t gplen = strlen(gitparent);
