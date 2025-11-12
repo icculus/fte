@@ -34,7 +34,7 @@ colorize Ruby {
         h_trans { 3, '', '"', 'String' }
         h_trans { 4, '', '\'', 'String' }
         h_trans { 6, 's', '0-9', 'Number' }
-        h_trans { 7, '', '/', 'String' }
+#        h_trans { 7, '', '/', 'String' }
         h_trans { 0, 'S', '_a-zA-Z0-9', 'Punctuation' }
 
         h_state 1 { 'Comment' }  # single line comment
@@ -61,9 +61,9 @@ colorize Ruby {
         h_trans { 0, '-S', '0-9', 'Normal' }
         h_trans { 0, '$', '', 'Normal' }
 
-        h_state 7 { 'Regexp' }  # Regular Expressions
-        h_trans { 7, '', '\\/', 'Regexp' }
-        h_trans { 0, 's', '/', 'String' }
+#        h_state 7 { 'Regexp' }  # Regular Expressions
+#        h_trans { 7, '', '\\/', 'Regexp' }
+#        h_trans { 0, 's', '/', 'String' }
 }
 
 
@@ -75,7 +75,7 @@ mode Ruby: PLAIN {               # Ruby mode
         HilitOn             = 1;
         AutoIndent          = 0;
         IndentMode          = 'PLAIN';
-        TabSize             = 8;
+        TabSize             = 4;
         SpaceTabs           = 1;
         MatchCase           = 1;
         Trim                = 1;
