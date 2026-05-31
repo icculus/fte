@@ -176,7 +176,8 @@ static int SetupSDLWindow(int argc, char **argv) {
     const int winw = ScreenCols * FontCX;
     const int winh = ScreenRows * FontCY;
 
-    Uint32 winflags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN;
+    // it's wild to do high-dpi on this app, but otherwise Wayland will scale the low-res window up for you with linear resampling, which makes the text blurry.
+    Uint32 winflags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_HIDDEN;
 
     dpimult = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
     win = SDL_CreateWindow(winTitle, (int) (winw * dpimult), (int) (winh * dpimult), winflags);
@@ -778,16 +779,17 @@ static void ProcessSDLEvent(SDL_Event &sdlevent, TEvent *Event) {
 
         case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED: {
             const float newdpimult = SDL_GetWindowDisplayScale(win);
+            //SDL_Log("newdpimult=%f", newdpimult);
             if (newdpimult != dpimult) {
                 bWindowDirty = true;
                 bSawUpdatableEvent = true;
-                SDL_GetWindowSizeInPixels(win, &w, &h);
+                SDL_GetWindowSize(win, &w, &h);
                 w = (int) ((((float) w) / dpimult) * newdpimult);
                 h = (int) ((((float) h) / dpimult) * newdpimult);
                 dpimult = newdpimult;
-                SDL_SetWindowSize(win, w, h);
-                SDL_SetWindowMinimumSize(win, (int) (MIN_SCRWIDTH * FontCX * dpimult), (int) (MIN_SCRHEIGHT * FontCY * dpimult));
                 ResizeWindow((int) (w / dpimult), (int) (h / dpimult));
+                Event->What = evCommand;
+                Event->Msg.Command = cmResize;
             }
             break;
         }
