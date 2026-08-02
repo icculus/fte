@@ -89,6 +89,7 @@ static char winSTitle[256] = "FTE";
 
 static SDL_Window *win = NULL;
 static bool bWindowDirty = false;
+static Uint64 WindowDirtyUntil = 0;
 static bool bCursorShown = true;
 static float dpimult = 1.0f;
 static bool bSawUpdatableEvent = false;
@@ -770,6 +771,10 @@ static void ProcessSDLEvent(SDL_Event &sdlevent, TEvent *Event) {
             break;
 
         case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+            // Keep pumping the event queue and redrawing as fast as
+            // possible when a user is resizing the window by dragging, so
+            // things stay responsive.
+            WindowDirtyUntil = SDL_GetTicks() + 2000;
             bWindowDirty = true;
             bSawUpdatableEvent = true;
             ResizeWindow((int) (sdlevent.window.data1 / dpimult), (int) (sdlevent.window.data2 / dpimult));
@@ -998,7 +1003,10 @@ int ConGetEvent(TEventMask EventMask, TEvent *Event, int WaitTime, int Delete) {
         }
 
         SDL_RenderPresent(renderer);
-        bWindowDirty = false;
+
+        if (!WindowDirtyUntil) {
+            bWindowDirty = false;
+        }
     }
 
     Event->What = evNone;
@@ -1025,7 +1033,7 @@ int ConGetEvent(TEventMask EventMask, TEvent *Event, int WaitTime, int Delete) {
             }
         }
 
-        if (!bHavePipes && (WaitTime < 0)) {
+        if (!bHavePipes && (WaitTime < 0) && !WindowDirtyUntil) {
             SDL_WaitEvent(NULL);  // do the best blocking we can.
         }
 
@@ -1079,7 +1087,14 @@ int ConGetEvent(TEventMask EventMask, TEvent *Event, int WaitTime, int Delete) {
             }
         }
 
-        SDL_Delay(30);
+        if (WindowDirtyUntil && (SDL_GetTicks() >= WindowDirtyUntil)) {
+            bWindowDirty = false;
+            WindowDirtyUntil = 0;
+        }
+
+        if (!WindowDirtyUntil) {
+            SDL_Delay(30);
+        }
     }
 
     return 0;
